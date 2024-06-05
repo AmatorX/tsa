@@ -9,21 +9,26 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-
+from os import getenv
 from pathlib import Path
+import logging.config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+DATABASE_DIR = BASE_DIR / 'database'
+DATABASE_DIR.mkdir(exist_ok=True)
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-qsy=+!tmhg5$*lh(!l*bet7kzx#*)p5+3@r_^9m^@o@0b2h7y7'
+# SECRET_KEY = 'django-insecure-qsy=+!tmhg5$*lh(!l*bet7kzx#*)p5+3@r_^9m^@o@0b2h7y7'
+SECRET_KEY = getenv('DJANGO_SECRET_KEY',
+                    'django-insecure-qsy=+!tmhg5$*lh(!l*bet7kzx#*)p5+3@r_^9m^@o@0b2h7y7')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = getenv('DJANGO_DEBUG', "0") == "1"
 
 ALLOWED_HOSTS = ['*']
 
@@ -78,7 +83,7 @@ WSGI_APPLICATION = 'tsa.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite',
+        'NAME': DATABASE_DIR / 'db.sqlite',
     }
 }
 
@@ -123,3 +128,28 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# LOGLEVEL = getenv("DJANGO_LOG_LEVEL", "info").upper()
+# logging.config.dictConfig({
+#     "version": 1,
+#     "disable_existing_loggers": False,
+#     "formatters": {
+#         "console": {
+#             "format": "%(ascitime)s %(levelname) [%(name)s: %(linea)s] %(module)s %(message)s"
+#         },
+#     },
+#     "handlers": {
+#         "console": {
+#             "class": "logging.StreamHandler",
+#             "formatter": "console"
+#         },
+#     },
+#     "loggers": {
+#         "": {
+#             "level": LOGLEVEL,
+#             "handlers": [
+#                 "console",
+#             ],
+#         },
+#     },
+# })
