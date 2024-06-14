@@ -1,4 +1,6 @@
 import calendar
+from time import sleep
+
 from common.service import service
 
 
@@ -59,6 +61,7 @@ def get_start_end_table(service, spreadsheet_id, sheet_name):
             if is_bordered:
                 last_bordered_row = i + 1
                 print(f"Последняя обведённая строка: {last_bordered_row}")
+                sleep(0.1)
                 break
             elif not is_bordered:
                 empty_rows_count += 1

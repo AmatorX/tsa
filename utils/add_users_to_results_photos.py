@@ -26,51 +26,54 @@ def add_users_to_results_photos(spreadsheet_url, usernames):
             start_copy, end_copy, start_paste, end_paste = get_start_end_table(service, spreadsheet_id, sheet_name)
 
             for username in usernames:
-                requests = []
+                try:
+                    requests = []
 
-                # Добавление запроса на копирование и вставку диапазона
-                requests.append({
-                    "copyPaste": {
-                        "source": {
-                            "sheetId": sheet_id,
-                            "startRowIndex": start_copy,
-                            "endRowIndex": end_copy,
-                            "startColumnIndex": 0,
-                            "endColumnIndex": 26
-                        },
-                        "destination": {
-                            "sheetId": sheet_id,
-                            "startRowIndex": start_paste,
-                            "endRowIndex": end_paste,
-                            "startColumnIndex": 0,
-                            "endColumnIndex": 26
-                        },
-                        "pasteType": "PASTE_NORMAL",
-                        "pasteOrientation": "NORMAL"
-                    }
-                })
-
-                # Добавление запроса на изменение значения в ячейке с именем пользователя
-                requests.append({
-                    "updateCells": {
-                        "rows": [{
-                            "values": [{"userEnteredValue": {"stringValue": username}}]
-                        }],
-                        "fields": "userEnteredValue",
-                        "start": {
-                            "sheetId": sheet_id,
-                            "rowIndex": start_paste,
-                            "columnIndex": 1
+                    # Добавление запроса на копирование и вставку диапазона
+                    requests.append({
+                        "copyPaste": {
+                            "source": {
+                                "sheetId": sheet_id,
+                                "startRowIndex": start_copy,
+                                "endRowIndex": end_copy,
+                                "startColumnIndex": 0,
+                                "endColumnIndex": 26
+                            },
+                            "destination": {
+                                "sheetId": sheet_id,
+                                "startRowIndex": start_paste,
+                                "endRowIndex": end_paste,
+                                "startColumnIndex": 0,
+                                "endColumnIndex": 26
+                            },
+                            "pasteType": "PASTE_NORMAL",
+                            "pasteOrientation": "NORMAL"
                         }
-                    }
-                })
+                    })
 
-                # Выполнение запросов
-                body = {"requests": requests}
-                service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=body).execute()
+                    # Добавление запроса на изменение значения в ячейке с именем пользователя
+                    requests.append({
+                        "updateCells": {
+                            "rows": [{
+                                "values": [{"userEnteredValue": {"stringValue": username}}]
+                            }],
+                            "fields": "userEnteredValue",
+                            "start": {
+                                "sheetId": sheet_id,
+                                "rowIndex": start_paste,
+                                "columnIndex": 1
+                            }
+                        }
+                    })
 
-                start_paste = end_paste + 4
-                end_paste = start_paste + end_copy
-            sleep(0.1)
+                    # Выполнение запросов
+                    body = {"requests": requests}
+                    service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=body).execute()
+
+                    start_paste = end_paste + 4
+                    end_paste = start_paste + end_copy
+                except Exception as e:
+                    print(f"An error occurred: {e}")
+            sleep(0.3)
 
     return "Tables copied and pasted successfully for all matching sheets."

@@ -1,5 +1,7 @@
 from django.db.models.signals import m2m_changed, post_save
 from django.dispatch import receiver
+
+from utils.update_materials_in_results import update_materials_in_sheets
 from .models import BuildObject, Worker
 from utils.create_object_tables import create_google_sheets
 from utils.add_users_to_work_time import append_user_to_work_time
@@ -11,10 +13,8 @@ from common.get_service import get_service
 # Так как объект создается только при добавлении материалов
 @receiver(m2m_changed, sender=BuildObject.material.through)
 def materials_changed(sender, instance, action, reverse, model, pk_set, **kwargs):
-    print('------------------------------------>materials_changed')
 
     if action == "post_add":  # Проверяем, что материалы были добавлены к объекту строительства
-        print("----------------------------------> post_add")
         sh_url = instance.sh_url
         service = get_service()
 
@@ -26,7 +26,10 @@ def materials_changed(sender, instance, action, reverse, model, pk_set, **kwargs
         name = instance.name
         total_budget = instance.total_budget
         sh_url = instance.sh_url
-        materials_info = [(material.name, float(material.price)) for material in model.objects.filter(pk__in=pk_set)]
+        # materials_info = [(material.name, float(material.price)) for material in model.objects.filter(pk__in=pk_set)]
+
+        # Получаем все материалы, уже привязанные к этому объекту
+        materials_info = [(material.name, float(material.price)) for material in instance.material.all()]
 
         if "Work Time" not in sheet_names:
             # Если листа "Work Time" нет, значит объект создается впервые
@@ -40,7 +43,7 @@ def materials_changed(sender, instance, action, reverse, model, pk_set, **kwargs
         else:
             # Лист "Work Time" существует, значит происходит обновление материалов существующего объекта
             print(f'Материалы {materials_info} изменили связь с объектом {name}')
-            # update_materials_in_sheets(sh_url, materials_info)
+            update_materials_in_sheets(sh_url, materials_info)
         
     elif action == "post_remove":
         # Материалы были удалены из BuildObject

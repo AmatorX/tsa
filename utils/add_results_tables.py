@@ -69,7 +69,7 @@ def create_materials_table(service, spreadsheet_url, month, materials, user_name
     # Формирование названия листа
     sheet_name = f"results_{month}_{year}"
 
-        # Получение списка листов в документе
+    # Получение списка листов в документе
     sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
     sheets = sheet_metadata.get('sheets', '')
 

@@ -1,4 +1,6 @@
 import datetime
+from time import sleep
+
 from .add_results_tables import create_materials_table
 from .add_photos_tables import create_photos_table
 
@@ -62,8 +64,10 @@ def create_monthly_sheets(service, spreadsheet_url, materials):
     spreadsheet_id = spreadsheet_url.split("/")[5]
     year = datetime.datetime.now().year
 
-    month_names = ["January", "February", "March", "April", "May", "June",
-                   "July", "August", "September", "October", "November", "December"]
+    all_month_names = ["January", "February", "March", "April", "May", "June",
+                       "July", "August", "September", "October", "November", "December"]
+    current_month = datetime.datetime.now().month
+    month_names = all_month_names[current_month - 1:]
 
     # Получение списка существующих листов в таблице
     sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
@@ -118,9 +122,7 @@ def create_monthly_sheets(service, spreadsheet_url, materials):
 
         if results_sheet_title not in existing_sheets:
             create_materials_table(service, spreadsheet_url, month, materials)
-
+        sleep(0.2)
     return f"Monthly sheets for {year} checked/created in spreadsheet: {spreadsheet_url}"
-
-
 
 # create_monthly_sheets('https://docs.google.com/spreadsheets/d/1gKsdz-icvXkx7km6Dl5RIqcEkGhn9GmFp80BIt3kVco/edit#gid=0')

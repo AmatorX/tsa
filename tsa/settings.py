@@ -9,14 +9,17 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
+import os
 from os import getenv
 from pathlib import Path
 import logging.config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATABASE_DIR = BASE_DIR / 'database'
-DATABASE_DIR.mkdir(exist_ok=True)
+# DATABASE_DIR = BASE_DIR / 'database'
+# DATABASE_DIR.mkdir(exist_ok=True)
+STATIC_ROOT = BASE_DIR / 'static'
+
 
 
 # Quick-start development settings - unsuitable for production
@@ -28,7 +31,9 @@ SECRET_KEY = getenv('DJANGO_SECRET_KEY',
                     'django-insecure-qsy=+!tmhg5$*lh(!l*bet7kzx#*)p5+3@r_^9m^@o@0b2h7y7')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = getenv('DJANGO_DEBUG', "0") == "1"
+# DEBUG = getenv('DJANGO_DEBUG', "0") == "1"
+# print(f'DEBUG: {DEBUG}')
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -83,7 +88,8 @@ WSGI_APPLICATION = 'tsa.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': DATABASE_DIR / 'db.sqlite',
+        'NAME': BASE_DIR / 'db.sqlite',
+        # 'NAME': DATABASE_DIR / 'db.sqlite',
     }
 }
 
@@ -122,7 +128,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+# STATIC_ROOT = '/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

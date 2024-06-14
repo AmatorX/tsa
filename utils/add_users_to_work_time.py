@@ -241,6 +241,7 @@ def append_user_to_work_time(spreadsheet_url, users, sheet_name='Work Time'):
             spreadsheetId=spreadsheet_id, range=range_name, body=body,
             valueInputOption='USER_ENTERED', insertDataOption='INSERT_ROWS'
         ).execute()
+        sleep(0.3)
 
         current_row += 1  # Переход к следующей строке для нового пользователя
 

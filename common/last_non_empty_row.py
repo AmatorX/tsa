@@ -2,6 +2,8 @@ from common.service import service
 
 
 service = service.get_service()
+
+
 def get_last_non_empty_row(service, spreadsheet_url, sheet_name):
     """
     Функция находит последнюю записанную ячейку в листе, возвращает индекс этой ячейки.
