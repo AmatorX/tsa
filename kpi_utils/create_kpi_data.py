@@ -1,8 +1,11 @@
 from datetime import datetime
+import googleapiclient
+
 from kpi_utils.update_users_kpi_values import update_kpi_values
 from common.service import service
 
-# Здесь подготавливаются данные для записи в таблицах USers KPI
+
+# Здесь подготавливаются данные для записи в таблицах Users KPI
 
 service = service.get_service()
 
@@ -49,9 +52,35 @@ def find_sheet_id_by_name(spreadsheet_url, service, sheet_name='Work Time'):
     return None
 
 
-def find_cell_by_date(spreadsheet_url):
+# def find_cell_by_date(spreadsheet_url):
+#
+#     # service = get_service()
+#     # Извлечение spreadsheet_id из URL
+#     spreadsheet_id = spreadsheet_url.split("/")[5]
+#
+#     date = get_current_month_and_day()
+#     month_day = date[0] + ' ' + str(date[1])
+#     print(f'Текущая дата: {month_day}')
+#
+#     # Определение диапазона для поиска
+#     range_name = 'Work Time!A:Z'
+#
+#     # Получение данных из листа
+#     sheet = service.spreadsheets()
+#     result = sheet.values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
+#     values = result.get('values', [])
+#
+#     # Поиск ячейки с заданным содержимым
+#     for row_index, row in enumerate(values):
+#         for col_index, value in enumerate(row):
+#             if month_day == value:
+#                 # print(f"Найдено совпадение в строке {row_index + 1}, столбце {col_index + 1}")
+#                 return spreadsheet_id, row_index + 1, col_index + 1
+#
+#     return None
 
-    # service = get_service()
+
+def find_cell_by_date(spreadsheet_url):
     # Извлечение spreadsheet_id из URL
     spreadsheet_id = spreadsheet_url.split("/")[5]
 
@@ -59,26 +88,42 @@ def find_cell_by_date(spreadsheet_url):
     month_day = date[0] + ' ' + str(date[1])
     print(f'Текущая дата: {month_day}')
 
-    # Определение диапазона для поиска
-    range_name = 'Work Time!A:Z'
+    try:
+        # Получение метаданных таблицы
+        sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+        sheets = sheet_metadata.get('sheets', '')
+        sheet_names = [sheet['properties']['title'] for sheet in sheets]
+        print(f'Доступные листы: {sheet_names}')
 
-    # Получение данных из листа
-    sheet = service.spreadsheets()
-    result = sheet.values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
-    values = result.get('values', [])
+        # Проверьте, существует ли лист 'Work Time'
+        if 'Work Time' not in sheet_names:
+            print(f"Лист 'Work Time' не найден в таблице. Доступные листы: {sheet_names}")
+            return None
 
-    # Поиск ячейки с заданным содержимым
-    for row_index, row in enumerate(values):
-        for col_index, value in enumerate(row):
-            if month_day == value:
-                # print(f"Найдено совпадение в строке {row_index + 1}, столбце {col_index + 1}")
-                return spreadsheet_id, row_index + 1, col_index + 1
+        # Определение диапазона для поиска
+        range_name = 'Work Time!A:Z'
+
+        # Получение данных из листа
+        result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
+        values = result.get('values', [])
+        print(f'Values: {values}')
+
+        # Поиск ячейки с заданным содержимым
+        for row_index, row in enumerate(values):
+            for col_index, value in enumerate(row):
+                if month_day == value:
+                    return spreadsheet_id, row_index + 1, col_index + 1
+
+    except googleapiclient.errors.HttpError as err:
+        print(f"An error occurred: {err}")
+        if err.resp.status == 403:
+            print("Access denied. Make sure the service account has access to the spreadsheet.")
+        return None
 
     return None
 
 
 def calculate_salary_by_names(spreadsheet_url, user_info_list):
-    # service = get_service()
     spreadsheet_id = spreadsheet_url.split("/")[5]
     salaries = []
 

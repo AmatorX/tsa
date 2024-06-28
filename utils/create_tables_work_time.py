@@ -2,14 +2,14 @@ import datetime
 from time import sleep
 
 from common.days_list import create_date_list
-from common.get_service import get_service
+from common.service import service
 from common.last_non_empty_row import get_last_non_empty_row
 
 # ИСПОЛЬЗОВАТЬ для создания таблицы вручную
 # from days_list import create_date_list
 # from get_service import get_service
 
-service = get_service()
+service = service.get_service()
 
 
 def create_color_format_request(sheet_id, start_row, end_row, start_column, end_column, color):
@@ -215,7 +215,7 @@ def create_work_time_tables(spreadsheet_url, sheet_name='Work Time'):
     else:
         current_row += 5
     print(f'Current row = {current_row}')
-    sleep(5)
+    # sleep(0.1)
     # #############
 
     # Формирование таблицы для текущего чанка

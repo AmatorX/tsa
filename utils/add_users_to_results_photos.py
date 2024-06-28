@@ -74,6 +74,6 @@ def add_users_to_results_photos(spreadsheet_url, usernames):
                     end_paste = start_paste + end_copy
                 except Exception as e:
                     print(f"An error occurred: {e}")
-            sleep(0.3)
+            # sleep(0.01)
 
     return "Tables copied and pasted successfully for all matching sheets."

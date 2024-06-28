@@ -1,23 +1,21 @@
 import calendar
 from datetime import datetime
 from common.get_sheet_id import get_sheet_id
+from kpi_utils.expenses_materials_in_objects import check_material_table
 
 
-# def convert_to_float(value):
-#     """Функция для преобразования строки в число с плавающей точкой"""
-#     if value:
-#         # Замена запятых на точки и удаление пробелов
-#         value = value.replace(',', '.').strip()
-#         try:
-#             # Попытка преобразовать строку в число с плавающей точкой
-#             return float(value)
-#         except ValueError:
-#             # В случае неудачи возвращаем 0
-#             return 0
-#     else:
-#         return 0
+def get_materials_list(building_object):
+    building_objects_dict = {}
+    materials = building_object.material.all()
+    if materials:  # Проверка наличия связанных объектов материалов
+        material_names = [material.name for material in materials]
+        # building_objects_dict[building_object.sh_url] = material_names
+        sh_url = building_object.sh_url
+        return sh_url, material_names
 
 
+
+# Добавляю создание таблицы учета расходов материалов
 def create_object_kpi_sheet(service, spreadsheet_url, build_object, sheet_name):
     """
     Функция ищет лист Object KPI
@@ -48,84 +46,14 @@ def create_object_kpi_sheet(service, spreadsheet_url, build_object, sheet_name):
     }
     response = service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=request_body).execute()
     sheet_id = response.get('replies', [])[0].get('addSheet', {}).get('properties', {}).get('sheetId')
-    # print(f"New sheet '{sheet_name}' created with Sheet ID: {sheet_id}")
+
     # Создаем таблицу Object KPI
-    # create_monthly_kpi_table(service, sheet_id, spreadsheet_id, build_object)
     total_budget = build_object.total_budget
+    # Сoздаем таблицу учета материалов в Object KPI
     create_monthly_kpi_table(service, spreadsheet_url, total_budget, sheet_name)
+    sh_url, materials = get_materials_list(build_object)
+    check_material_table(sh_url, materials)
     return sheet_id
-
-
-# def create_monthly_kpi_table(service, spreadsheet_url, total_budget, sheet_name, start_row=0):
-#     """
-#     Функция создания таблицы Objext KPI для текущего месяца
-#     """
-#
-#     # Определение текущего месяца и количества дней в нем
-#     now = datetime.now()
-#     month_name = now.strftime("%B")
-#     days_in_month = calendar.monthrange(now.year, now.month)[1]
-#     spreadsheet_id = spreadsheet_url.split("/")[5]
-#     sheet_id = get_sheet_id(service, spreadsheet_url, sheet_name)
-#
-#     # Начальный индекс строки и столбца
-#     # start_row_index = 0
-#     start_column = 0
-#
-#     # Формирование заголовков
-#     headers = [month_name, "Done today $", "Done today %", "Total done %", "Budget balance"]
-#     days_headers = list(range(1, days_in_month + 1))
-#
-#     # Создаем запросы для добавления заголовков и дней месяца
-#     requests = [{
-#         "updateCells": {
-#             "start": {"sheetId": sheet_id, "rowIndex": start_row, "columnIndex": start_column},
-#             "rows": [{"values": [{"userEnteredValue": {"stringValue": str(header)}} for header in headers]}],
-#             "fields": "userEnteredValue"
-#         }
-#     }]
-#
-#     # Добавляем дни месяца
-#     for i, day in enumerate(days_headers, start=start_row + 1):
-#         requests.append({
-#             "updateCells": {
-#                 "start": {"sheetId": sheet_id, "rowIndex": i, "columnIndex": start_column},
-#                 "rows": [{"values": [{"userEnteredValue": {"numberValue": day}}]}],
-#                 "fields": "userEnteredValue"
-#             }
-#         })
-#
-#     # Значение Budget balance во второй строке
-#     requests.append({
-#         "updateCells": {
-#             "start": {"sheetId": sheet_id, "rowIndex": start_row + 1, "columnIndex": len(headers) - 1},
-#             "rows": [{"values": [{"userEnteredValue": {"stringValue": str(total_budget)}}]}],
-#             "fields": "userEnteredValue"
-#         }
-#     })
-#
-#     # Установка границ для всей таблицы
-#     requests.append({
-#         "updateBorders": {
-#             "range": {
-#                 "sheetId": sheet_id,
-#                 "startRowIndex": start_row,
-#                 "endRowIndex": start_row + days_in_month + 1,
-#                 "startColumnIndex": start_column,
-#                 "endColumnIndex": len(headers)
-#             },
-#             "top": {"style": "SOLID", "width": 1},
-#             "bottom": {"style": "SOLID", "width": 1},
-#             "left": {"style": "SOLID", "width": 1},
-#             "right": {"style": "SOLID", "width": 1},
-#             "innerHorizontal": {"style": "SOLID", "width": 1},
-#             "innerVertical": {"style": "SOLID", "width": 1}
-#         }
-#     })
-#
-#     # Выполняем все запросы одной транзакцией
-#     service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests}).execute()
-#     print(f'Таблица KPI для месяца "{month_name}" создана')
 
 
 def create_monthly_kpi_table(service, spreadsheet_url, total_budget, sheet_name, start_row=0):

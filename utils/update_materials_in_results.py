@@ -1,16 +1,44 @@
 import datetime
 from time import sleep
 
+import googleapiclient
+
 from common.service import service
 
 service = service.get_service()
 
-def get_names_list():
+
+# def get_names_list():
+#     year = datetime.datetime.now().year
+#     all_month_names = ["January", "February", "March", "April", "May", "June",
+#                        "July", "August", "September", "October", "November", "December"]
+#     current_month = datetime.datetime.now().month
+#     return [f'results_{month}_{year}' for month in all_month_names[current_month - 1:]]
+
+def get_existing_results_sheet_names(sh_url):
+    """
+    Функция возвращает список листов results_month_year которые существуют в спредшитс
+    """
+    spreadsheet_id = sh_url.split("/")[5]
     year = datetime.datetime.now().year
     all_month_names = ["January", "February", "March", "April", "May", "June",
                        "July", "August", "September", "October", "November", "December"]
     current_month = datetime.datetime.now().month
-    return [f'results_{month}_{year}' for month in all_month_names[current_month - 1:]]
+    expected_sheet_names = [f'results_{month}_{year}' for month in all_month_names[current_month - 1:]]
+
+    try:
+        sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+        existing_sheets = [sheet['properties']['title'] for sheet in sheet_metadata.get('sheets', [])]
+        print(f'Existing sheets: {existing_sheets}')
+
+        actual_sheet_names = [name for name in expected_sheet_names if name in existing_sheets]
+        return actual_sheet_names
+
+    except googleapiclient.errors.HttpError as err:
+        print(f"An error occurred: {err}")
+        print(f"Details: {err.resp.status} {err.resp.reason}")
+        return []
+
 
 def get_index_pairs(spreadsheet_id, sheet_name):
     print(f'Sheet name: {sheet_name}')
@@ -24,6 +52,7 @@ def get_index_pairs(spreadsheet_id, sheet_name):
             indices[val[0]].append(i + 1)
 
     return list(zip(indices['Price'], indices['Material']))
+
 
 def get_value_pairs(spreadsheet_id, sheet_name, index_pairs):
     if not index_pairs:
@@ -91,19 +120,18 @@ def add_missing_materials(spreadsheet_id, sheet_name, index_pairs, value_pairs, 
                             valueInputOption="RAW",
                             body={"values": [[price]]}
                         ).execute()
-                        sleep(1)
+                        # sleep(0.1)
                 break
 
 
 def update_materials_in_sheets(sh_url, materials_info):
     print(f'URL листа {sh_url} \n материалы {materials_info}')
     spreadsheet_id = sh_url.split("/")[5]
-    names_list = get_names_list()
+    names_list = get_existing_results_sheet_names(sh_url)
     for sheet_name in names_list:
         index_pairs = get_index_pairs(spreadsheet_id, sheet_name)
         print(f'Index pairs: {index_pairs}\n')
         value_pairs = get_value_pairs(spreadsheet_id, sheet_name, index_pairs)
         print(f'Value pairs: {value_pairs}\n')
         add_missing_materials(spreadsheet_id, sheet_name, index_pairs, value_pairs, materials_info)
-        sleep(2)
 

@@ -163,3 +163,5 @@ cython_debug/
 .vscode
 *.json
 /u_tests/my_google_sheets_key.json
+*.sqlite
+
