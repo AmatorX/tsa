@@ -1,5 +1,5 @@
 from django.contrib import admin, messages
-from .models import Worker, BuildObject, Material, Tool
+from .models import Worker, BuildObject, Material, Tool, ToolsSheet
 # from ..utils.add_users_to_work_time import append_user_names_to_tables
 
 
@@ -46,12 +46,17 @@ class MaterialAdmin(admin.ModelAdmin):
 
 
 class ToolAdmin(admin.ModelAdmin):
-    fields = ('name', 'tool_id', 'date_of_issue', 'assigned_to')
-    list_display = ('name', 'tool_id', 'date_of_issue', 'assigned_to')
-    list_editable = ('assigned_to',)
+    fields = ('name', 'tool_id', 'date_of_issue', 'assigned_to', 'tools_sheet')
+    list_display = ('name', 'tool_id', 'date_of_issue', 'assigned_to', 'tools_sheet')
+    list_editable = ('assigned_to', 'tools_sheet')
+
+
+class ToolsSheetAdmin(admin.ModelAdmin):
+    fields = ('name', 'sh_url')
 
 
 admin.site.register(Worker, WorkerAdmin)
 admin.site.register(BuildObject, BuildObjectAdmin)
 admin.site.register(Material, MaterialAdmin)
 admin.site.register(Tool, ToolAdmin)
+admin.site.register(ToolsSheet, ToolsSheetAdmin)

@@ -66,11 +66,20 @@ class BuildObject(models.Model):
         return self.name
 
 
+class ToolsSheet(models.Model):
+    name = models.CharField(max_length=255)
+    sh_url = models.URLField(null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+
 class Tool(models.Model):
     name = models.CharField(max_length=255, blank=True)
     tool_id = models.CharField(max_length=255, blank=True, unique=True)
     date_of_issue = models.DateField(blank=True, null=True)
     assigned_to = models.ForeignKey('Worker', related_name='tools', on_delete=models.SET_NULL, null=True, blank=True)
+    tools_sheet = models.ForeignKey('ToolsSheet', related_name='tools_sheet', on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.name
