@@ -366,7 +366,6 @@ def calculate_sums_materials_in_results(spreadsheet_url, row_indexes, sh_name):
     return results
 
 
-
 def update_materials_on_objects(data: dict):
     """
     Функция обновления данных в таблице учета материалов объекта.

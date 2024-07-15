@@ -44,6 +44,7 @@ def materials_changed(sender, instance, action, reverse, model, pk_set, **kwargs
             # Лист "Work Time" существует, значит происходит обновление материалов существующего объекта
             print(f'Материалы {materials_info} изменили связь с объектом {name}')
             update_materials_in_sheets(sh_url, materials_info)
+            print(f'Добавить данные в Object KPI')
         
     elif action == "post_remove":
         # Материалы были удалены из BuildObject

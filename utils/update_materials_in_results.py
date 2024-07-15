@@ -1,43 +1,19 @@
 import datetime
+from calendar import monthrange
+import string
 from time import sleep
 
 import googleapiclient
 
+from common.return_results_curr_month_year import generate_results_filename
 from common.service import service
 
 service = service.get_service()
 
 
-# def get_names_list():
-#     year = datetime.datetime.now().year
-#     all_month_names = ["January", "February", "March", "April", "May", "June",
-#                        "July", "August", "September", "October", "November", "December"]
-#     current_month = datetime.datetime.now().month
-#     return [f'results_{month}_{year}' for month in all_month_names[current_month - 1:]]
-
-def get_existing_results_sheet_names(sh_url):
-    """
-    Функция возвращает список листов results_month_year которые существуют в спредшитс
-    """
-    spreadsheet_id = sh_url.split("/")[5]
-    year = datetime.datetime.now().year
-    all_month_names = ["January", "February", "March", "April", "May", "June",
-                       "July", "August", "September", "October", "November", "December"]
-    current_month = datetime.datetime.now().month
-    expected_sheet_names = [f'results_{month}_{year}' for month in all_month_names[current_month - 1:]]
-
-    try:
-        sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
-        existing_sheets = [sheet['properties']['title'] for sheet in sheet_metadata.get('sheets', [])]
-        print(f'Existing sheets: {existing_sheets}')
-
-        actual_sheet_names = [name for name in expected_sheet_names if name in existing_sheets]
-        return actual_sheet_names
-
-    except googleapiclient.errors.HttpError as err:
-        print(f"An error occurred: {err}")
-        print(f"Details: {err.resp.status} {err.resp.reason}")
-        return []
+def make_lst(data: dict):
+    lst = [val[0] for val in data.values()]
+    return lst
 
 
 def get_index_pairs(spreadsheet_id, sheet_name):
@@ -124,14 +100,225 @@ def add_missing_materials(spreadsheet_id, sheet_name, index_pairs, value_pairs, 
                 break
 
 
+# ####################################################################################################
+# Здесь функции добавления материалов в таблицы учета материалов Object KPI
+def update_materials_in_object_kpi(spreadsheet_id, materials_list):
+    row_index = get_row_for_current_month(spreadsheet_id, sheet_name='Object KPI', column='H')
+    in_stock = get_materials_dict(spreadsheet_id, row_index, sheet_name='Object KPI')
+    # sleep(60)
+    values_to_record = find_missing_materials(spreadsheet_id, row_index, in_stock, materials_list, sheet_name='Object KPI')
+    # sleep(60)
+    write_materials_to_sheet(spreadsheet_id, row_index, values_to_record, sheet_name='Object KPI')
+    # sleep(60)
+
+
+def get_row_for_current_month(spreadsheet_id, sheet_name='Object KPI', column='H'):
+    """
+    Парсит столбец H на листе Object KPI, находит название текущего месяца и возвращает индекс строки текущего месяца + 1.
+    """
+
+    # Получение текущего месяца в формате полного названия месяца (например, "July")
+    current_month = datetime.datetime.now().strftime("%B")
+
+    # Определение диапазона для чтения данных из столбца H
+    range_name = f"{sheet_name}!{column}:{column}"
+
+    # Получение данных из столбца H
+    result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
+    values = result.get('values', [])
+
+    # Поиск строки, содержащей название текущего месяца
+    for i, row in enumerate(values):
+        if current_month in row:
+            print(f'Индекс строки текущего месяца {i + 1}')
+            return i + 1  # Возвращаем индекс строки + 1
+
+    return None  # Если текущий месяц не найден
+
+
+def get_materials_dict(spreadsheet_id, row_index, sheet_name='Object KPI'):
+    """
+    Парсит все ячейки по индексу строки, начиная с ячейки в столбце I, и возвращает словарь in_stock.
+    Ключ - название материала, значение - буква столбца.
+    """
+
+    # Определение диапазона для чтения данных из строки начиная с колонки I
+    start_column = 'I'
+    end_column = 'Z'  # Установите максимальный конечный столбец для чтения
+    range_name = f"{sheet_name}!{start_column}{row_index}:{end_column}{row_index}"
+
+    # Получение данных из строки
+    result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name, majorDimension='ROWS').execute()
+    row_values = result.get('values', [])[0]  # Получаем значения строки, если пусто, возвращаем пустой список
+    print(f'ROW VALUES: {row_values}')
+    in_stock = {}
+
+    # Обработка значений строки
+    for idx, value in enumerate(row_values):
+        if value:  # Проверяем, что значение не пустое
+            column_letter = string.ascii_uppercase[idx + 8]  # +8 потому что I - это 9-я колонка (0-индексированный список)
+            in_stock[value] = column_letter
+    print(f'Список материалов в таблице: {in_stock}')
+    return in_stock
+
+
+def get_next_column_letter(last_column_letter):
+    """
+    Возвращает следующую букву столбца после заданной.
+    """
+    last_index = string.ascii_uppercase.index(last_column_letter)
+    if last_index == len(string.ascii_uppercase) - 1:
+        # Если последний столбец Z, следующий будет AA
+        return 'AA'
+    else:
+        return string.ascii_uppercase[last_index + 1]
+
+
+def find_missing_materials(spreadsheet_id, row_index, in_stock, materials_list, sheet_name='Object KPI'):
+    """
+    Находит материалы, которых нет в in_stock, но которые есть в materials_list.
+    Создает словарь values_to_record, где ключ - название материала, значение - буква колонки.
+    """
+
+    # Получение последней буквы столбца из in_stock
+    if in_stock:
+        last_column_letter = max(in_stock.values(), key=lambda x: string.ascii_uppercase.index(x))
+    else:
+        last_column_letter = 'H'  # Начнем с колонки I, если in_stock пуст
+
+    values_to_record = {}
+    for material in materials_list:
+        if material not in in_stock:
+            next_column_letter = get_next_column_letter(last_column_letter)
+            values_to_record[material] = next_column_letter
+            last_column_letter = next_column_letter
+    print(f'VALUES TO RECORD: {values_to_record}')
+    return values_to_record
+
+
+def get_sheet_id(service, spreadsheet_id, sheet_name):
+    """
+    Возвращает идентификатор листа по его имени.
+    """
+    sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+    sheets = sheet_metadata.get('sheets', '')
+    for sheet in sheets:
+        if sheet.get("properties", {}).get("title", "") == sheet_name:
+            return sheet.get("properties", {}).get("sheetId", "")
+    return None
+
+
+def write_materials_to_sheet(spreadsheet_id, row_index, values_to_record, sheet_name='Object KPI'):
+    """
+    Записывает данные в столбцы, указанные в values_to_record, начиная с row_index.
+    Для каждого столбца записывает название материала и очерчивает границы.
+    """
+    sheet_id = get_sheet_id(service, spreadsheet_id, sheet_name)
+
+    if sheet_id is None:
+        raise ValueError(f"Sheet with name '{sheet_name}' not found.")
+
+    # Определение текущего месяца и количества дней в нем
+    today = datetime.datetime.now()
+    current_year = today.year
+    current_month = today.month
+    _, num_days = monthrange(current_year, current_month)
+
+    requests = []
+
+    for material, column_letter in values_to_record.items():
+        start_column_index = ord(column_letter) - ord('A')
+        end_column_index = start_column_index + 1
+        start_row_index = row_index - 1
+        end_row_index = start_row_index + num_days + 2  # Исправление индекса
+
+        # Очерчивание всех ячеек в столбце
+        requests.append({
+            "updateBorders": {
+                "range": {
+                    "sheetId": sheet_id,
+                    "startRowIndex": start_row_index,
+                    "endRowIndex": end_row_index,
+                    "startColumnIndex": start_column_index,
+                    "endColumnIndex": end_column_index
+                },
+                "top": {
+                    "style": "SOLID",
+                    "width": 1,
+                    "color": {"red": 0, "green": 0, "blue": 0}
+                },
+                "bottom": {
+                    "style": "SOLID",
+                    "width": 1,
+                    "color": {"red": 0, "green": 0, "blue": 0}
+                },
+                "left": {
+                    "style": "SOLID",
+                    "width": 1,
+                    "color": {"red": 0, "green": 0, "blue": 0}
+                },
+                "right": {
+                    "style": "SOLID",
+                    "width": 1,
+                    "color": {"red": 0, "green": 0, "blue": 0}
+                },
+                "innerHorizontal": {
+                    "style": "SOLID",
+                    "width": 1,
+                    "color": {"red": 0, "green": 0, "blue": 0}
+                },
+                "innerVertical": {
+                    "style": "SOLID",
+                    "width": 1,
+                    "color": {"red": 0, "green": 0, "blue": 0}
+                }
+            }
+        })
+
+        # Запись названия материала в первую ячейку столбца
+        requests.append({
+            "updateCells": {
+                "range": {
+                    "sheetId": sheet_id,
+                    "startRowIndex": start_row_index,
+                    "endRowIndex": start_row_index + 1,
+                    "startColumnIndex": start_column_index,
+                    "endColumnIndex": end_column_index
+                },
+                "rows": [{
+                    "values": [{
+                        "userEnteredValue": {"stringValue": material}
+                    }]
+                }],
+                "fields": "userEnteredValue"
+            }
+        })
+
+    body = {
+        "requests": requests
+    }
+
+    service.spreadsheets().batchUpdate(
+        spreadsheetId=spreadsheet_id,
+        body=body
+    ).execute()
+
+    return f"Materials {list(values_to_record.keys())} have been added to the sheet '{sheet_name}' starting at row {row_index}."
+
 def update_materials_in_sheets(sh_url, materials_info):
     print(f'URL листа {sh_url} \n материалы {materials_info}')
     spreadsheet_id = sh_url.split("/")[5]
-    names_list = get_existing_results_sheet_names(sh_url)
-    for sheet_name in names_list:
-        index_pairs = get_index_pairs(spreadsheet_id, sheet_name)
-        print(f'Index pairs: {index_pairs}\n')
-        value_pairs = get_value_pairs(spreadsheet_id, sheet_name, index_pairs)
-        print(f'Value pairs: {value_pairs}\n')
-        add_missing_materials(spreadsheet_id, sheet_name, index_pairs, value_pairs, materials_info)
+    sheet_name = generate_results_filename()
+
+    index_pairs = get_index_pairs(spreadsheet_id, sheet_name)
+    print(f'Index pairs: {index_pairs}\n')
+    value_pairs = get_value_pairs(spreadsheet_id, sheet_name, index_pairs)
+    print(f'Value pairs: {value_pairs}\n')
+    add_missing_materials(spreadsheet_id, sheet_name, index_pairs, value_pairs, materials_info)
+    # Обновление данных расхода материалов в таблицах листов Object KPI
+
+    # Создаем список с материалами, которые сейчамс привязаны к объекту
+    materials_list = make_lst(value_pairs)
+    # Функция обновления материалов в таблицах учета расхода материалов
+    update_materials_in_object_kpi(spreadsheet_id, materials_list)
 

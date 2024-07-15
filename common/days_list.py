@@ -63,7 +63,6 @@ def create_date_list():
     # Получение имен месяцев и аббревиатур дней недели один раз
     month_names = [calendar.month_name[month] for month in range(1, 13)]
     weekdays_abbr = list(calendar.day_abbr)
-
     # Создание списка всех дней в году с использованием списковых включений
     date_list = [
         (month_names[month - 1], weekdays_abbr[calendar.weekday(year, month, day)], str(day))

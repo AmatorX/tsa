@@ -58,5 +58,6 @@ class ToolsSheetAdmin(admin.ModelAdmin):
 admin.site.register(Worker, WorkerAdmin)
 admin.site.register(BuildObject, BuildObjectAdmin)
 admin.site.register(Material, MaterialAdmin)
-admin.site.register(Tool, ToolAdmin)
 admin.site.register(ToolsSheet, ToolsSheetAdmin)
+admin.site.register(Tool, ToolAdmin)
+
