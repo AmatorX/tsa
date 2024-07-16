@@ -2,7 +2,6 @@ import datetime
 from calendar import monthrange
 import string
 from time import sleep
-
 import googleapiclient
 
 from common.return_results_curr_month_year import generate_results_filename
@@ -11,9 +10,12 @@ from common.service import service
 service = service.get_service()
 
 
-def make_lst(data: dict):
-    lst = [val[0] for val in data.values()]
-    return lst
+# def make_lst(data: dict):
+#     lst = [val[0] for val in data.values()]
+#     return lst
+
+def make_lst(data: list):
+    return [material[0] for material in data]
 
 
 def get_index_pairs(spreadsheet_id, sheet_name):
@@ -31,6 +33,10 @@ def get_index_pairs(spreadsheet_id, sheet_name):
 
 
 def get_value_pairs(spreadsheet_id, sheet_name, index_pairs):
+    """
+    Функция get_value_pairs извлекает значения строк для Price и Material из Google Sheets, а затем создает словарь,
+    где ключами являются буквы столбцов, а значениями - списки, содержащие material и price.
+    """
     if not index_pairs:
         return {}
 
@@ -68,12 +74,12 @@ def add_missing_materials(spreadsheet_id, sheet_name, index_pairs, value_pairs, 
                         spreadsheetId=spreadsheet_id,
                         range=material_cell
                     ).execute()
-                    sleep(1)
+                    # sleep(1)
                     price_value_result = service.spreadsheets().values().get(
                         spreadsheetId=spreadsheet_id,
                         range=price_cell
                     ).execute()
-                    sleep(1)
+                    # sleep(1)
 
                     material_value = material_value_result.get('values', [[]])[0]
                     price_value = price_value_result.get('values', [[]])[0]
@@ -86,7 +92,7 @@ def add_missing_materials(spreadsheet_id, sheet_name, index_pairs, value_pairs, 
                             valueInputOption="RAW",
                             body={"values": [[material]]}
                         ).execute()
-                        sleep(1)
+                        # sleep(1)
 
                     if not (price_value and price_value[0].startswith("=")):
                         # print(f"Updating price cell {price_cell} with value {price}")
@@ -182,10 +188,11 @@ def find_missing_materials(spreadsheet_id, row_index, in_stock, materials_list, 
 
     # Получение последней буквы столбца из in_stock
     if in_stock:
+        print(f'IN SOCK {in_stock}')
         last_column_letter = max(in_stock.values(), key=lambda x: string.ascii_uppercase.index(x))
     else:
         last_column_letter = 'H'  # Начнем с колонки I, если in_stock пуст
-
+    print(f'MATERIALS LIST {materials_list}')
     values_to_record = {}
     for material in materials_list:
         if material not in in_stock:
@@ -305,6 +312,7 @@ def write_materials_to_sheet(spreadsheet_id, row_index, values_to_record, sheet_
 
     return f"Materials {list(values_to_record.keys())} have been added to the sheet '{sheet_name}' starting at row {row_index}."
 
+
 def update_materials_in_sheets(sh_url, materials_info):
     print(f'URL листа {sh_url} \n материалы {materials_info}')
     spreadsheet_id = sh_url.split("/")[5]
@@ -318,7 +326,9 @@ def update_materials_in_sheets(sh_url, materials_info):
     # Обновление данных расхода материалов в таблицах листов Object KPI
 
     # Создаем список с материалами, которые сейчамс привязаны к объекту
-    materials_list = make_lst(value_pairs)
+    materials_list = make_lst(materials_info)
     # Функция обновления материалов в таблицах учета расхода материалов
+
+    print(f'Список материалов перед добавление в таблицу учета в Object KPI {materials_list}')
     update_materials_in_object_kpi(spreadsheet_id, materials_list)
 

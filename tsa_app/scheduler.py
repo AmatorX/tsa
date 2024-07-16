@@ -123,9 +123,9 @@ scheduler = BackgroundScheduler()
 calgary_tz = pytz.timezone('America/Edmonton')  # Калгари находится в часовом поясе America/Edmonton
 
 # Добавление задачи в планировщик. Задача будет выполняться каждый день в 19:00 по времени Калгари
-scheduler.add_job(update_kpi, trigger=CronTrigger(hour=23, minute=14, second=0, timezone=calgary_tz))
-scheduler.add_job(check_and_create_tables, trigger=CronTrigger(hour=19, minute=25, second=0, timezone=calgary_tz))
-scheduler.add_job(update_objects_with_materials, trigger=CronTrigger(hour=19, minute=35, second=0, timezone=calgary_tz))
+scheduler.add_job(update_kpi, trigger=CronTrigger(hour=12, minute=14, second=0, timezone=calgary_tz))
+scheduler.add_job(check_and_create_tables, trigger=CronTrigger(hour=12, minute=16, second=0, timezone=calgary_tz))
+scheduler.add_job(update_objects_with_materials, trigger=CronTrigger(hour=12, minute=17, second=0, timezone=calgary_tz))
 
 
 def start_scheduler():
