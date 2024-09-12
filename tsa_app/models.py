@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils import timezone
 
 
 class Worker(models.Model):
@@ -74,12 +75,101 @@ class ToolsSheet(models.Model):
         return self.name
 
 
+# class Tool(models.Model):
+#     name = models.CharField(max_length=255, blank=True)
+#     tool_id = models.CharField(max_length=255, blank=True, unique=True)
+#     date_of_issue = models.DateField(blank=True, null=True)
+#     assigned_to = models.ForeignKey('Worker', related_name='tools', on_delete=models.SET_NULL, null=True, blank=True)
+#     tools_sheet = models.ForeignKey('ToolsSheet', related_name='tools_sheet', on_delete=models.CASCADE, null=True, blank=True)
+#
+#     def __str__(self):
+#         return self.name
+
+
+# class Tool(models.Model):
+#     name = models.CharField(max_length=255, blank=True)
+#     tool_id = models.CharField(max_length=255, blank=True, unique=True)
+#     date_of_issue = models.DateField(blank=True, null=True)
+#     assigned_to = models.ForeignKey('Worker', related_name='tools', on_delete=models.SET_NULL, null=True, blank=True)
+#     tools_sheet = models.ForeignKey('ToolsSheet', related_name='tools_sheet', on_delete=models.CASCADE, null=True, blank=True)
+#
+#     def save(self, *args, **kwargs):
+#         if not self.tools_sheet:
+#             # Предполагается, что объект ToolsSheet всегда будет в одном экземпляре
+#             self.tools_sheet = ToolsSheet.objects.first()
+#         super().save(*args, **kwargs)
+#
+#     def __str__(self):
+#         return self.name
+
+
+# class Tool(models.Model):
+#     name = models.CharField(max_length=255, blank=True)
+#     tool_id = models.CharField(max_length=255, unique=True)
+#     date_of_issue = models.DateField(blank=True, null=True)
+#     assigned_to = models.ForeignKey('Worker', related_name='tools', on_delete=models.SET_NULL, null=True, blank=True)
+#     tools_sheet = models.ForeignKey('ToolsSheet', related_name='tools_sheet', on_delete=models.CASCADE, null=True,
+#                                     blank=True)
+
+    # def save(self, *args, **kwargs):
+    #     if self.pk:  # Если объект уже существует в базе данных
+    #         previous = Tool.objects.get(pk=self.pk)
+    #
+    #         if previous.assigned_to != self.assigned_to:
+    #             if self.assigned_to is None:
+    #                 # Если поле assigned_to изменено с пользователя на None, очищаем date_of_issue
+    #                 self.date_of_issue = None
+    #             else:
+    #                 # Если поле assigned_to изменено с None или другого пользователя на нового, устанавливаем текущую дату
+    #                 self.date_of_issue = timezone.now().date()
+    #     else:
+    #         # Если объект новый и assigned_to уже заполнено, устанавливаем дату
+    #         if self.assigned_to:
+    #             self.date_of_issue = timezone.now().date()
+    #
+    #     # Автоматическое присвоение tools_sheet, если оно не указано
+    #     if not self.tools_sheet:
+    #         self.tools_sheet = ToolsSheet.objects.first()
+    #
+    #     super().save(*args, **kwargs)
+    #
+    # def __str__(self):
+    #     return self.name
+
+
 class Tool(models.Model):
     name = models.CharField(max_length=255, blank=True)
-    tool_id = models.CharField(max_length=255, blank=True, unique=True)
+    tool_id = models.CharField(max_length=255, unique=True)
+    # tool_id = models.CharField(max_length=255, blank=True, unique=True)
+    price = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True, default=0)
+    # price = models.FloatField(max_length=16, blank=True, null=True)
     date_of_issue = models.DateField(blank=True, null=True)
     assigned_to = models.ForeignKey('Worker', related_name='tools', on_delete=models.SET_NULL, null=True, blank=True)
     tools_sheet = models.ForeignKey('ToolsSheet', related_name='tools_sheet', on_delete=models.CASCADE, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.pk:  # Если объект уже существует в базе данных
+            previous = Tool.objects.get(pk=self.pk)
+
+            if previous.assigned_to != self.assigned_to:
+                if self.assigned_to is None:
+                    # Если поле assigned_to изменено с пользователя на None, очищаем date_of_issue
+                    self.date_of_issue = None
+                else:
+                    # Если поле assigned_to изменено с None или другого пользователя на нового
+                    # и если дата не установлена, устанавливаем текущую дату
+                    if not self.date_of_issue:
+                        self.date_of_issue = timezone.now().date()
+        else:
+            # Если объект новый и assigned_to уже заполнено
+            if self.assigned_to and not self.date_of_issue:
+                self.date_of_issue = timezone.now().date()
+
+        # Автоматическое присвоение tools_sheet, если оно не указано
+        if not self.tools_sheet:
+            self.tools_sheet = ToolsSheet.objects.first()
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name

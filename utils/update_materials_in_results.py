@@ -1,25 +1,23 @@
 import datetime
 from calendar import monthrange
+import logging
 import string
 from time import sleep
-import googleapiclient
-
+from logging_config import setup_logging
 from common.return_results_curr_month_year import generate_results_filename
 from common.service import service
 
+
 service = service.get_service()
+setup_logging()
 
-
-# def make_lst(data: dict):
-#     lst = [val[0] for val in data.values()]
-#     return lst
 
 def make_lst(data: list):
     return [material[0] for material in data]
 
 
 def get_index_pairs(spreadsheet_id, sheet_name):
-    print(f'Sheet name: {sheet_name}')
+    logging.debug(f'Sheet name: {sheet_name}')
     range_name = f"{sheet_name}!A1:A"
     result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
     values = result.get('values', [])
@@ -136,7 +134,7 @@ def get_row_for_current_month(spreadsheet_id, sheet_name='Object KPI', column='H
     # Поиск строки, содержащей название текущего месяца
     for i, row in enumerate(values):
         if current_month in row:
-            print(f'Индекс строки текущего месяца {i + 1}')
+            logging.debug(f'Индекс строки текущего месяца {i + 1}')
             return i + 1  # Возвращаем индекс строки + 1
 
     return None  # Если текущий месяц не найден
@@ -156,7 +154,7 @@ def get_materials_dict(spreadsheet_id, row_index, sheet_name='Object KPI'):
     # Получение данных из строки
     result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name, majorDimension='ROWS').execute()
     row_values = result.get('values', [])[0]  # Получаем значения строки, если пусто, возвращаем пустой список
-    print(f'ROW VALUES: {row_values}')
+    logging.debug(f'ROW VALUES: {row_values}')
     in_stock = {}
 
     # Обработка значений строки
@@ -164,7 +162,7 @@ def get_materials_dict(spreadsheet_id, row_index, sheet_name='Object KPI'):
         if value:  # Проверяем, что значение не пустое
             column_letter = string.ascii_uppercase[idx + 8]  # +8 потому что I - это 9-я колонка (0-индексированный список)
             in_stock[value] = column_letter
-    print(f'Список материалов в таблице: {in_stock}')
+    logging.debug(f'Список материалов в таблице: {in_stock}')
     return in_stock
 
 
@@ -188,18 +186,18 @@ def find_missing_materials(spreadsheet_id, row_index, in_stock, materials_list, 
 
     # Получение последней буквы столбца из in_stock
     if in_stock:
-        print(f'IN SOCK {in_stock}')
+        logging.debug(f'IN SOCK {in_stock}')
         last_column_letter = max(in_stock.values(), key=lambda x: string.ascii_uppercase.index(x))
     else:
         last_column_letter = 'H'  # Начнем с колонки I, если in_stock пуст
-    print(f'MATERIALS LIST {materials_list}')
+    logging.debug(f'MATERIALS LIST {materials_list}')
     values_to_record = {}
     for material in materials_list:
         if material not in in_stock:
             next_column_letter = get_next_column_letter(last_column_letter)
             values_to_record[material] = next_column_letter
             last_column_letter = next_column_letter
-    print(f'VALUES TO RECORD: {values_to_record}')
+    logging.debug(f'VALUES TO RECORD: {values_to_record}')
     return values_to_record
 
 
@@ -223,6 +221,7 @@ def write_materials_to_sheet(spreadsheet_id, row_index, values_to_record, sheet_
     sheet_id = get_sheet_id(service, spreadsheet_id, sheet_name)
 
     if sheet_id is None:
+        logging.error(f"Sheet with name '{sheet_name}' not found.")
         raise ValueError(f"Sheet with name '{sheet_name}' not found.")
 
     # Определение текущего месяца и количества дней в нем
@@ -309,19 +308,21 @@ def write_materials_to_sheet(spreadsheet_id, row_index, values_to_record, sheet_
         spreadsheetId=spreadsheet_id,
         body=body
     ).execute()
-
-    return f"Materials {list(values_to_record.keys())} have been added to the sheet '{sheet_name}' starting at row {row_index}."
+    logging.info(f"Materials {list(values_to_record.keys())} have been added to the sheet '{sheet_name}'"
+                 f" starting at row {row_index}.")
+    return (f"Materials {list(values_to_record.keys())} have been added to the sheet '{sheet_name}'"
+            f" starting at row {row_index}.")
 
 
 def update_materials_in_sheets(sh_url, materials_info):
-    print(f'URL листа {sh_url} \n материалы {materials_info}')
+    logging.debug(f'URL листа {sh_url} \n материалы {materials_info}')
     spreadsheet_id = sh_url.split("/")[5]
     sheet_name = generate_results_filename()
 
     index_pairs = get_index_pairs(spreadsheet_id, sheet_name)
-    print(f'Index pairs: {index_pairs}\n')
+    logging.debug(f'Index pairs: {index_pairs}\n')
     value_pairs = get_value_pairs(spreadsheet_id, sheet_name, index_pairs)
-    print(f'Value pairs: {value_pairs}\n')
+    logging.debug(f'Value pairs: {value_pairs}\n')
     add_missing_materials(spreadsheet_id, sheet_name, index_pairs, value_pairs, materials_info)
     # Обновление данных расхода материалов в таблицах листов Object KPI
 
@@ -329,6 +330,6 @@ def update_materials_in_sheets(sh_url, materials_info):
     materials_list = make_lst(materials_info)
     # Функция обновления материалов в таблицах учета расхода материалов
 
-    print(f'Список материалов перед добавление в таблицу учета в Object KPI {materials_list}')
+    logging.debug(f'Список материалов перед добавление в таблицу учета в Object KPI {materials_list}')
     update_materials_in_object_kpi(spreadsheet_id, materials_list)
 

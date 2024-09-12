@@ -6,6 +6,18 @@ from common.get_service import get_service
 import datetime
 
 
+def get_names_in_last_chunk(input_list):
+    # Проходим список в обратном порядке и добавляем элементы в новый список, пока не встретим пустой элемент
+    filtered_list = []
+    for item in reversed(input_list):
+        if item:  # Если элемент не пустой
+            filtered_list.append(item[0])  # Добавляем первый элемент из вложенного списка
+        else:
+            break  # Прерываем цикл, если встретили пустой элемент
+    # Возвращаем список в правильном порядке
+    return list(reversed(filtered_list)) if filtered_list else [item[0] for item in input_list if item]
+
+
 def find_last_index_with_user_name(data):
     """
     Перебор массива values, для поиска последнего списка со значением "User Name"
@@ -18,7 +30,7 @@ def find_last_index_with_user_name(data):
     return None  # Если 'User Name' не найден
 
 
-def get_values(spreadsheet_id, service, sheet_name):
+def get_names_in_work_time(spreadsheet_id, service, sheet_name):
     """
     Возвращает значения ячеек
     """
@@ -28,7 +40,9 @@ def get_values(spreadsheet_id, service, sheet_name):
     # Получение данных из столбца B
     result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
     values = result.get('values', [])
-    print(f'Список ячеек для поиска пустой строки {values}')
+    print(f'Список ячеек для поиска пустой строки\n'
+          f'--------------->'
+          f' {values}')
     return values
 
 
@@ -36,31 +50,6 @@ def get_start_row(values):
     start_row = len(values) + 1
     print(f'Индекс строки для записи {start_row}')
     return start_row
-
-
-# def get_start_row(spreadsheet_url, sheet_name):
-#     service = get_service()
-#
-#     # Извлечение spreadsheet_id из URL
-#     spreadsheet_id = spreadsheet_url.split("/")[5]
-#
-#     # Определение диапазона для чтения данных из столбца B
-#     range_name = f"{sheet_name}!B:B"
-#
-#     try:
-#         # Получение данных из столбца B
-#         result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
-#         values = result.get('values', [])
-#         print(f'Список ячеек для поиска пустой строки {values}')
-#
-#         # Возвращаем индекс строки для записи (первой после последней заполненной)
-#         start_row = len(values) + 1
-#         print(f'Индекс строки для записи {start_row}')
-#         return start_row
-#
-#     except Exception as e:
-#         print(f"An error occurred: {e}")
-#         return None  # В случае ошибки возвращаем None
 
 
 def append_user_to_work_time(spreadsheet_url, users, sheet_name='Work Time'):
@@ -75,7 +64,7 @@ def append_user_to_work_time(spreadsheet_url, users, sheet_name='Work Time'):
 
     # Извлечение spreadsheet_id из URL
     spreadsheet_id = spreadsheet_url.split("/")[5]
-    values = get_values(spreadsheet_id, service, sheet_name)
+    values = get_names_in_work_time(spreadsheet_id, service, sheet_name)
     start_row = get_start_row(values)
     # Задаем стартовую строку для добавления формул Total и Salary
     start_row_total_and_salary = find_last_index_with_user_name(values)
@@ -97,24 +86,29 @@ def append_user_to_work_time(spreadsheet_url, users, sheet_name='Work Time'):
 
     if not current_chunk:
         return "No chunk found for today's date."
-
+    names_in_last_chunk = get_names_in_last_chunk(values)
     for user_info in users:
         user_name, per_hour = user_info[0], float(user_info[1])
-        total_formula = f'=SUM(C{current_row}:{chr(66 + len(current_chunk))}{current_row})'
-        salary_formula = f'=A{current_row}*{chr(66 + len(current_chunk) + 1)}{current_row}'
-        row_data = [[per_hour, user_name] + [' '] * len(current_chunk) + [total_formula, salary_formula]]
+        if user_name not in names_in_last_chunk:
+            print(f'Имя {user_name} не найдено в списке текущего чанка -> {names_in_last_chunk}'
+                  f'Производим добавление')
+            total_formula = f'=SUM(C{current_row}:{chr(66 + len(current_chunk))}{current_row})'
+            salary_formula = f'=A{current_row}*{chr(66 + len(current_chunk) + 1)}{current_row}'
+            row_data = [[per_hour, user_name] + [' '] * len(current_chunk) + [total_formula, salary_formula]]
 
-        # Добавление данных пользователя в лист
-        range_name = f"{sheet_name}!A{current_row}"
-        body = {
-            'values': row_data
-        }
-        service.spreadsheets().values().append(
-            spreadsheetId=spreadsheet_id, range=range_name, body=body,
-            valueInputOption='USER_ENTERED', insertDataOption='INSERT_ROWS'
-        ).execute()
+            # Добавление данных пользователя в лист
+            range_name = f"{sheet_name}!A{current_row}"
+            body = {
+                'values': row_data
+            }
+            service.spreadsheets().values().append(
+                spreadsheetId=spreadsheet_id, range=range_name, body=body,
+                valueInputOption='USER_ENTERED', insertDataOption='INSERT_ROWS'
+            ).execute()
 
-        current_row += 1  # Переход к следующей строке для нового пользователя
+            current_row += 1  # Переход к следующей строке для нового пользователя
+        else:
+            print(f'Имя {user_name} уже есть в таблице, добавлять не нужно!')
 
     # Добавление строки с формулами сумм Total и Salary
     total_formula_range = f"{sheet_name}!{chr(67 + len(current_chunk))}{end_row_total_and_salary + 1}"

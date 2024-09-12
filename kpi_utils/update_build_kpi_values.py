@@ -1,5 +1,9 @@
 from datetime import datetime
+from time import sleep
+
 from common.service import service
+from kpi_utils.expenses_materials_in_objects import create_materials_table
+# from kpi_utils.expenses_materials_in_objects import create_materials_table
 from utils.create_object_kpi_sheet import create_monthly_kpi_table
 from common.last_non_empty_row import get_last_non_empty_row
 
@@ -13,7 +17,7 @@ def is_first_of_the_month():
     Вернет True если 1-е число, иначе вернет False
     """
     today = datetime.now()
-    return today.day == 1
+    return today.day == 12
 
 
 def get_remaining_budget(service, spreadsheet_url, sheet_name):
@@ -65,18 +69,6 @@ def get_current_day_row(spreadsheet_url, sheet_name):
     return None  # День не найден
 
 
-# def update_build_kpi(build_kpi, spreadsheet_url, sheet_name='Object KPI'):
-#     if is_first_of_the_month():
-#         last_row = get_last_non_empty_row(service, spreadsheet_url, sheet_name)
-#         start_row = last_row + 3
-#         total_budget = get_remaining_budget(service, spreadsheet_url, sheet_name)
-#
-#         create_monthly_kpi_table(service, spreadsheet_url, total_budget=total_budget, sheet_name='Object KPI', start_row=start_row)
-#     else:
-#         current_day_row = get_current_day_row(service, spreadsheet_url, sheet_name)
-#         print(f'Current day row : {current_day_row}')
-
-
 def update_kpi_value(spreadsheet_url, total_sum, current_day_row):
     spreadsheet_id = spreadsheet_url.split("/")[5]
     sheet_name = 'Object KPI'
@@ -102,6 +94,7 @@ def update_kpi_value(spreadsheet_url, total_sum, current_day_row):
         valueInputOption='USER_ENTERED',
         body=body
     ).execute()
+    sleep(4)
 
     print(f'Updated total sum: {total_sum} in {range_name} on sheet {sheet_name}')
     return result
@@ -110,23 +103,15 @@ def update_kpi_value(spreadsheet_url, total_sum, current_day_row):
 def update_build_kpi(build_kpi, sheet_name='Object KPI'):
     # Перебор всех записей в build_kpi
     for spreadsheet_url, user_data in build_kpi:
-        if is_first_of_the_month():
-            last_row = get_last_non_empty_row(service, spreadsheet_url, sheet_name)
-            start_row = last_row + 3
-            total_budget = get_remaining_budget(service, spreadsheet_url, sheet_name)
+        total_sum = sum(value for _, value in user_data)
+        print(f'Total sum for {spreadsheet_url} is {total_sum}')
+        # Получаем строку для текущего дня
+        current_day_row = get_current_day_row(spreadsheet_url, sheet_name)
+        print(f'Current day row: {current_day_row}')
 
-            # Создание таблицы KPI для текущего месяца с учётом полученных данных
-            create_monthly_kpi_table(service, spreadsheet_url, total_budget=total_budget, sheet_name=sheet_name,
-                                     start_row=start_row)
-            print(f"Updated KPI table for sheet {sheet_name} at {spreadsheet_url}")
-        else:
-            # Считаем сумму числовых значений для каждого пользователя
-            total_sum = sum(value for _, value in user_data)
-            print(f'Total sum for {spreadsheet_url} is {total_sum}')
-
-            current_day_row = get_current_day_row(spreadsheet_url, sheet_name)
-            print(f'Current day row : {current_day_row}')
-            update_kpi_value(spreadsheet_url, total_sum, current_day_row)
+        # Обновляем данные в KPI
+        update_kpi_value(spreadsheet_url, total_sum, current_day_row)
+        sleep(4)  # Пауза между обновлениями для каждой таблицы
 
 
 

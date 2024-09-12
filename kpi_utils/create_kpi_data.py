@@ -1,5 +1,9 @@
 from datetime import datetime
+from time import sleep
+
 import googleapiclient
+import logging
+from logging_config import setup_logging
 
 from kpi_utils.update_users_kpi_values import update_kpi_values
 from common.service import service
@@ -8,6 +12,7 @@ from common.service import service
 # Здесь подготавливаются данные для записи в таблицах Users KPI
 
 service = service.get_service()
+setup_logging()
 
 
 def get_sheet_id(service, spreadsheet_id, sheet_name):
@@ -19,7 +24,7 @@ def get_sheet_id(service, spreadsheet_id, sheet_name):
     for sheet in sheets:
         if sheet['properties']['title'] == sheet_name:
             return sheet['properties']['sheetId']
-
+    logging.error(f"Sheet with name '{sheet_name}' not found.")
     raise ValueError(f"Sheet with name '{sheet_name}' not found.")
 
 
@@ -38,7 +43,6 @@ def find_sheet_id_by_name(spreadsheet_url, service, sheet_name='Work Time'):
     # Извлечение spreadsheet_id из URL
     spreadsheet_id = spreadsheet_url.split("/")[5]
 
-
     # Получение списка всех листов в таблице
     sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
     sheets = sheet_metadata.get('sheets', '')
@@ -52,52 +56,25 @@ def find_sheet_id_by_name(spreadsheet_url, service, sheet_name='Work Time'):
     return None
 
 
-# def find_cell_by_date(spreadsheet_url):
-#
-#     # service = get_service()
-#     # Извлечение spreadsheet_id из URL
-#     spreadsheet_id = spreadsheet_url.split("/")[5]
-#
-#     date = get_current_month_and_day()
-#     month_day = date[0] + ' ' + str(date[1])
-#     print(f'Текущая дата: {month_day}')
-#
-#     # Определение диапазона для поиска
-#     range_name = 'Work Time!A:Z'
-#
-#     # Получение данных из листа
-#     sheet = service.spreadsheets()
-#     result = sheet.values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
-#     values = result.get('values', [])
-#
-#     # Поиск ячейки с заданным содержимым
-#     for row_index, row in enumerate(values):
-#         for col_index, value in enumerate(row):
-#             if month_day == value:
-#                 # print(f"Найдено совпадение в строке {row_index + 1}, столбце {col_index + 1}")
-#                 return spreadsheet_id, row_index + 1, col_index + 1
-#
-#     return None
-
-
+# Шаг 4
 def find_cell_by_date(spreadsheet_url):
     # Извлечение spreadsheet_id из URL
     spreadsheet_id = spreadsheet_url.split("/")[5]
 
     date = get_current_month_and_day()
     month_day = date[0] + ' ' + str(date[1])
-    print(f'Текущая дата: {month_day}')
+    logging.debug(f'Текущая дата: {month_day}')
 
     try:
         # Получение метаданных таблицы
         sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
         sheets = sheet_metadata.get('sheets', '')
         sheet_names = [sheet['properties']['title'] for sheet in sheets]
-        print(f'Доступные листы: {sheet_names}')
+        logging.debug(f'Доступные листы: {sheet_names}')
 
         # Проверьте, существует ли лист 'Work Time'
         if 'Work Time' not in sheet_names:
-            print(f"Лист 'Work Time' не найден в таблице. Доступные листы: {sheet_names}")
+            logging.debug(f"Лист 'Work Time' не найден в таблице. Доступные листы: {sheet_names}")
             return None
 
         # Определение диапазона для поиска
@@ -106,7 +83,7 @@ def find_cell_by_date(spreadsheet_url):
         # Получение данных из листа
         result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
         values = result.get('values', [])
-        print(f'Values: {values}')
+        logging.debug(f'Values: {values}')
 
         # Поиск ячейки с заданным содержимым
         for row_index, row in enumerate(values):
@@ -115,14 +92,15 @@ def find_cell_by_date(spreadsheet_url):
                     return spreadsheet_id, row_index + 1, col_index + 1
 
     except googleapiclient.errors.HttpError as err:
-        print(f"An error occurred: {err}")
+        logging.error(f"An error occurred: {err}")
         if err.resp.status == 403:
-            print("Access denied. Make sure the service account has access to the spreadsheet.")
+            logging.error("Access denied. Make sure the service account has access to the spreadsheet.")
         return None
 
     return None
 
 
+# Шаг 3
 def calculate_salary_by_names(spreadsheet_url, user_info_list):
     spreadsheet_id = spreadsheet_url.split("/")[5]
     salaries = []
@@ -134,7 +112,6 @@ def calculate_salary_by_names(spreadsheet_url, user_info_list):
     range_end = date_row_index + len(user_info_list) + 1  # +1 для учета дополнительной строки после списка пользователей
     range_name = f'Work Time!B{date_row_index + 1}:B{range_end}'
 
-
     # Получение данных из листа
     result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
     values = result.get('values', [])
@@ -145,26 +122,38 @@ def calculate_salary_by_names(spreadsheet_url, user_info_list):
 
         # Поиск имени пользователя в списке значений
         for row_index, row in enumerate(values):
-
             if row and row[0] == user_name:
-
                 user_found = True
                 # Получение часов из соответствующего столбца даты для найденного пользователя
                 hours_range = f'Work Time!{chr(65 + date_col_index - 1)}{date_row_index + row_index + 1}'
-                hours_result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=hours_range).execute()
+                hours_result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id,
+                                                                   range=hours_range).execute()
                 hours = hours_result.get('values', [[0]])[0][0]
 
+                # Проверка и предобработка данных
+                try:
+                    hours = float(hours)
+                except ValueError:
+                    hours = 0.0  # или любое другое значение по умолчанию
+
+                try:
+                    user_salary = float(user_salary)
+                except ValueError:
+                    user_salary = 0.0  # или любое другое значение по умолчанию
+
                 # Вычисление заработной платы
-                calculated_salary = float(hours) * float(user_salary)
+                calculated_salary = hours * user_salary
                 salaries.append([user_name, calculated_salary])
                 break  # Прерываем цикл, так как нашли пользователя и рассчитали его зарплату
 
         if not user_found:
             # Если пользователь не найден, добавляем его с зарплатой 0
             salaries.append([user_name, 0.0])
+
     return spreadsheet_url, salaries
 
 
+# Шаг 2
 def get_kpi_for_work_time(sh_and_users):
     work_time_kpi = []
     for data_list in sh_and_users:
@@ -172,9 +161,8 @@ def get_kpi_for_work_time(sh_and_users):
         user_info_list = data_list[1]
         name_salary_work_time = calculate_salary_by_names(spreadsheet_url, user_info_list)
         work_time_kpi.append(name_salary_work_time)
-    print()
-    print(f'KPI WORk TIME\n{work_time_kpi}')
-    print()
+        sleep(3)
+    logging.debug(f'KPI WORk TIME\n{work_time_kpi}')
     return work_time_kpi
 
 
@@ -204,7 +192,7 @@ def get_indexes_cell_name(service, spreadsheet_url, sheet_name, name):
     # Поиск ячейки с заданным именем
     for row_index, row in enumerate(values):
         if row and row[0] == name:
-            print(f"Найдено совпадение в строке {row_index + 1}, столбце 2, для имени {name}")
+            logging.debug(f"Найдено совпадение в строке {row_index + 1}, столбце 2, для имени {name}")
             return name, row_index + 1
 
     # Если имя не найдено, возвращаем None
@@ -258,7 +246,8 @@ def calculate_total_material_cost(service, spreadsheet_url, sheet_name, name, st
             total_cost += material_price * salary
         else:
             break  # Прекращаем цикл, если встретили пустую ячейку в material_price
-    print(f"Total cost for {name}: {total_cost}")
+    logging.debug(f"Total cost for {name}: {total_cost}")
+    sleep(3)
     return name, total_cost
 
 
@@ -281,15 +270,15 @@ def get_kpi_for_results(sh_and_users):
                 start_row=start_row)
             user_results.append(list(name_salary_results))
         kpi_results[spreadsheet_url] = user_results
+        sleep(1)
 
     # Преобразование словаря в список кортежей
     kpi_results = [(url, data) for url, data in kpi_results.items()]
-    print()
-    print(f'KPI RESULTS\n{kpi_results}')
-    print()
+    logging.debug(f'KPI RESULTS\n{kpi_results}')
     return kpi_results
 
 
+# 1 Шаг
 def update_data_users_kpi(sh_and_users):
     kpi_work_time = get_kpi_for_work_time(sh_and_users=sh_and_users)
     kpi_results = get_kpi_for_results(sh_and_users=sh_and_users)
@@ -313,7 +302,6 @@ def update_data_users_kpi(sh_and_users):
                     updated_data.append([name, diff])
             # Добавление обновлённых данных в итоговый результат
             data_list.append((url, updated_data))
-    print(f'DATA FOR KPI SHEET\n{data_list}')
+    logging.debug(f'DATA FOR KPI SHEET\n{data_list}')
     update_kpi_values(data_list=data_list)
     return kpi_results
-

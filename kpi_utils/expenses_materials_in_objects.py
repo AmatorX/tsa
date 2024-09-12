@@ -1,5 +1,6 @@
 from datetime import datetime
 import calendar
+from time import sleep
 
 from common.return_results_curr_month_year import generate_results_filename
 from common.service import service
@@ -220,9 +221,9 @@ def update_materials_values(spreadsheet_url, materials, materials_list_in_table,
     print(f'Materials Letters in table: {material_letters}')
     print(f'Indexes of the material rows in the results table for the current month: {row_indexes_total_materials}')
     material_total_used = calculate_sums_materials_in_results(spreadsheet_url, row_indexes_total_materials, sh_name=generate_results_filename())
-    data_dict =  merge_dictionaries(material_letters, material_total_used)
+    data_dict = merge_dictionaries(material_letters, material_total_used)
     update_spreadsheet(spreadsheet_url, data_dict)
-    print()
+
 
 
 # def update_spreadsheet(spreadsheet_url, data_dict):
@@ -280,6 +281,7 @@ def update_materials_values(spreadsheet_url, materials, materials_list_in_table,
 #     service.spreadsheets().values().batchUpdate(spreadsheetId=spreadsheet_id, body=body).execute()
 
 
+
 def update_spreadsheet(spreadsheet_url, data_dict):
     spreadsheet_id = spreadsheet_url.split("/")[5]
     sheet_name = "Object KPI"
@@ -314,6 +316,7 @@ def update_spreadsheet(spreadsheet_url, data_dict):
         source_range = f"{sheet_name}!{col_letter}{month_row + 2}"
         source_result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=source_range).execute()
         source_values = source_result.get('values', [])
+        sleep(2)
 
         # Проверка наличия значения в ячейке
         if source_values and source_values[0]:
@@ -363,6 +366,7 @@ def calculate_sums_materials_in_results(spreadsheet_url, row_indexes, sh_name):
         # Создаем пару ключ: значение в словаре
         results[name] = sum_x
     print(f'Results {results}')
+    sleep(4)
     return results
 
 
@@ -374,6 +378,9 @@ def update_materials_on_objects(data: dict):
     for spreadsheet_url, materials in data.items():
         materials_list_in_table, month_row_index = check_material_table(spreadsheet_url, materials)
         update_materials_values(spreadsheet_url, materials, materials_list_in_table,  month_row_index)
+        sleep(4)
+
+
 
 
 # spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1gKsdz-icvXkx7km6Dl5RIqcEkGhn9GmFp80BIt3kVco/edit#gid=1862401406'

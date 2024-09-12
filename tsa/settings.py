@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 import os
 from os import getenv
 from pathlib import Path
+from celery.schedules import crontab
 import logging.config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -19,8 +20,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # DATABASE_DIR = BASE_DIR / 'database'
 # DATABASE_DIR.mkdir(exist_ok=True)
 STATIC_ROOT = BASE_DIR / 'static'
-
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -37,7 +36,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -48,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'tsa_app.apps.TsaAppConfig',
+    # 'django_admin_listfilter_dropdown',
 ]
 
 MIDDLEWARE = [
@@ -81,7 +80,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'tsa.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
@@ -92,7 +90,6 @@ DATABASES = {
         # 'NAME': DATABASE_DIR / 'db.sqlite',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -112,7 +109,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
@@ -123,7 +119,6 @@ TIME_ZONE = 'America/Edmonton'
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
@@ -160,3 +155,39 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 #         },
 #     },
 # })
+CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Используйте Redis или другого брокера
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+
+
+# ВАЖНО !!!! Первые две задачи на проверку существования таблиц, должны запускаться в 0:01
+# Иначе если запускать их перед обновлением KPI, то утром 1-го данных не будет записано,
+# так как таблицы для записи данных будут созданы вечером
+#
+# Разделить проверку наличия таблиц в Object KPI и обновление данных KPI
+#
+#
+
+CELERY_BEAT_SCHEDULE = {
+    'check_and_create_tables_results_and_photos': {
+        'task': 'tsa_app.tasks.check_and_create_tables_results_and_photos',
+        'schedule': crontab(hour='13', minute='38'),  # Каждый день в 19:45
+    },
+    'check-and-create-tables-every-night': {
+        'task': 'tsa_app.tasks.check_and_create_table_work_time',
+        'schedule': crontab(hour='13', minute='40'),  # Каждый день в 19:10
+    },
+    'check_object_kpi_tables_exist': {
+        'task': 'tsa_app.tasks.check_object_kpi_tables_exist',
+        'schedule': crontab(hour='13', minute='42'),  # Каждый день в 19:10
+    },
+    'update-kpi-every-morning': {
+        'task': 'tsa_app.tasks.update_kpi',
+        'schedule': crontab(hour='13', minute='44'),  # Каждый день в 19:30
+    },
+    'update-objects-with-materials-lunch-time': {
+        'task': 'tsa_app.tasks.update_objects_with_materials',
+        'schedule': crontab(hour='13', minute='46'),  # Каждый день в 19:45
+    },
+
+}

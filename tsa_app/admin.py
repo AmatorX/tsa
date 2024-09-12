@@ -1,6 +1,7 @@
 from django.contrib import admin, messages
 from .models import Worker, BuildObject, Material, Tool, ToolsSheet
 # from ..utils.add_users_to_work_time import append_user_names_to_tables
+from django.contrib.admin import SimpleListFilter
 
 
 class WorkerAdmin(admin.ModelAdmin):
@@ -18,7 +19,7 @@ class WorkerAdmin(admin.ModelAdmin):
             'fields': ('employment_agreement', 'over_time', 'start_to_work', 'title', 'payroll_eligible', 'payroll', 'resign_agreement', 'benefits_eligible', 'birthday', 'issued', 'expiry', 'address', 'tickets_available'),
         }),
     )
-    list_per_page = 10
+    list_per_page = 20
     # inlines = (WorkerProfileInline,)
 
     def save_model(self, request, obj, form, change):
@@ -45,10 +46,33 @@ class MaterialAdmin(admin.ModelAdmin):
     list_display = ('name', 'price')
 
 
+class BuildObjectFilter(SimpleListFilter):
+    title = 'Build Object'  # Название фильтра в админке
+    parameter_name = 'build_obj'  # Параметр фильтра
+
+    def lookups(self, request, model_admin):
+        # Возвращаем список опций для фильтра
+        build_objs = set(obj.assigned_to.build_obj for obj in model_admin.model.objects.all() if obj.assigned_to and obj.assigned_to.build_obj)
+        return [(obj.id, obj.name) for obj in build_objs]
+
+    def queryset(self, request, queryset):
+        # Фильтруем queryset в зависимости от выбранного значения
+        if self.value():
+            return queryset.filter(assigned_to__build_obj__id=self.value())
+        return queryset
+
+
 class ToolAdmin(admin.ModelAdmin):
-    fields = ('name', 'tool_id', 'date_of_issue', 'assigned_to', 'tools_sheet')
-    list_display = ('name', 'tool_id', 'date_of_issue', 'assigned_to', 'tools_sheet')
-    list_editable = ('assigned_to', 'tools_sheet')
+    fields = ('name', 'tool_id', 'price', 'date_of_issue', 'assigned_to', 'tools_sheet')
+    list_display = ('name', 'tool_id', 'price', 'date_of_issue', 'assigned_to', 'get_build_obj_name')
+    list_editable = ('assigned_to', 'price', 'date_of_issue',)
+    list_filter = (BuildObjectFilter, 'name', 'tool_id', 'date_of_issue', 'assigned_to', )
+    list_per_page = 50
+
+    def get_build_obj_name(self, obj):
+        return obj.assigned_to.build_obj.name if obj.assigned_to and obj.assigned_to.build_obj else 'N/A'
+
+    get_build_obj_name.short_description = 'Build Object'
 
 
 class ToolsSheetAdmin(admin.ModelAdmin):

@@ -1,5 +1,7 @@
 import calendar
 from datetime import datetime
+from time import sleep
+
 from common.get_sheet_id import get_sheet_id
 from kpi_utils.expenses_materials_in_objects import check_material_table
 
@@ -80,10 +82,8 @@ def create_monthly_kpi_table(service, spreadsheet_url, total_budget, sheet_name,
     # Создание списка запросов
     requests = []
 
-    print(f'TOTAL_BUDGET -----------------> {type(total_budget)} <--------------------')
-
     # Заголовки таблицы
-    headers = [month_name, "Done today $", "Done today %", "Total done %", "Budget balance"]
+    headers = [month_name, "Done today $", "Done today %", "Total left %", "Budget balance"]
     # Первая строка: Заголовки
     requests.append({
         "updateCells": {
@@ -140,5 +140,6 @@ def create_monthly_kpi_table(service, spreadsheet_url, total_budget, sheet_name,
 
     # Выполнение запросов
     service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests}).execute()
+    sleep(1)
     print(f'Таблица KPI для месяца "{month_name}" создана')
 

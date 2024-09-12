@@ -5,11 +5,9 @@ class TsaAppConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'tsa_app'
 
-    # def ready(self):
-    #     from tsa_app import scheduler  # Импорт файла scheduler.py
-    #     scheduler.scheduler.start()
-
     def ready(self):
         import tsa_app.signals  # Импортируем сигналы для их подключения
-        from .scheduler import start_scheduler
-        start_scheduler()
+        # from .scheduler import start_scheduler
+        # print('TsaAppConfig запуск')
+        # start_scheduler()
+

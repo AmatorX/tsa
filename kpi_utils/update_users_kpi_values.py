@@ -34,6 +34,7 @@ def find_users_kpi_table(service, spreadsheet_url):
         print(f"Error reading data from spreadsheet: {e}")
         return False
 
+
 def update_kpi_values(data_list):
     """
     Функция для обновления данных KPI для users
@@ -49,6 +50,7 @@ def update_kpi_values(data_list):
     for spreadsheet_url, user_data in data_list:
         if not find_users_kpi_table(service, spreadsheet_url):
             create_users_kpi_table(service, spreadsheet_url)
+            sleep(1)
         spreadsheet_id = spreadsheet_url.split("/")[5]
         sheet_name = "Users KPI"
 
@@ -83,6 +85,7 @@ def update_kpi_values(data_list):
                             update_value_range = f"{sheet_name}!{get_column_letter(current_day)}{name_row_index}"
                             update_value_body = {'values': [[value]]}
                             service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=update_value_range, body=update_value_body, valueInputOption='USER_ENTERED').execute()
+                            sleep(2)
                             break
                         if not name_row:
                             empty_row_index = name_row_index

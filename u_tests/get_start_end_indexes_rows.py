@@ -1,10 +1,12 @@
 import calendar
-from service import get_service
+
+from common.get_service import get_service
+
+# from service import get_service
 
 
 # TODO Можно убрать определение start_copy, end_copy, а вычислять их в зависимости от месяца
 # Первая и последняя строка для копирования зависит только от колтчества дней в текущем месяце
-
 
 def get_indexes_for_rows(spreadsheet_url, sheet_name):
     service = get_service()

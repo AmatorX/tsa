@@ -77,7 +77,6 @@ def create_date_list():
     # Создание чанков
     chunked_date_list = [date_list[:second_sunday_index]] if second_sunday_index else []
     chunked_date_list.extend([date_list[i:i + 14] for i in range(second_sunday_index, len(date_list), 14)])
-
     return chunked_date_list
 
 # Пример использования и вывода в консоль

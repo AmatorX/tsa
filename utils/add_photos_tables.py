@@ -63,7 +63,7 @@ def create_photos_table(service, spreadsheet_url, month, user_name='Example'):
     days_in_month = calendar.monthrange(year, month_number)[1]
 
     # Создание данных таблицы
-    values = [["Day"] + [user_name] + [''] * (25)]  # Заголовки таблицы, до столбца Z
+    values = [["Day"] + [user_name] + [''] * 25]  # Заголовки таблицы, до столбца Z
     values += [[str(day)] + [''] * 25 for day in range(1, days_in_month + 1)]  # Дни месяца и пустые ячейки
 
     # Добавление данных в лист
