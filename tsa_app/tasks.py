@@ -57,6 +57,7 @@ def get_materials_info(sh_url):
 
 
 def check_current_month_in_sheets(sheet_names):
+    print('Старт функции check_current_month_in_sheets')
     # Получение текущего месяца
     current_month = datetime.datetime.now().strftime("%B")
     # Проверка наличия текущего месяца в именах листов
@@ -127,10 +128,12 @@ def check_and_create_table_work_time():
     current_chunk = get_current_chunk(date_list)
     if current_chunk:
         start_date_str = f"{current_chunk[0][0]} {current_chunk[0][2]} {datetime.datetime.now().year}"
+        print(f'start_date_str -> {start_date_str}')
 
         start_date = datetime.datetime.strptime(start_date_str, "%B %d %Y")
 ##################
-        if datetime.datetime.now() == start_date:
+        # if datetime.datetime.now() == start_date:
+        if datetime.datetime.now().date() == start_date.date():
         # if start_date: # раскоментировать для принудительного создания табл work_time
             result = get_objects_and_related_users()
             logger.info("Чанк закончился, создаем новую таблицу и добавляем пользователей.")

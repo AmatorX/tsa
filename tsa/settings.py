@@ -171,23 +171,23 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_BEAT_SCHEDULE = {
     'check_and_create_tables_results_and_photos': {
         'task': 'tsa_app.tasks.check_and_create_tables_results_and_photos',
-        'schedule': crontab(hour='13', minute='38'),  # Каждый день в 19:45
+        'schedule': crontab(hour='15', minute='35'),  # Каждый день в 19:45
     },
     'check-and-create-tables-every-night': {
         'task': 'tsa_app.tasks.check_and_create_table_work_time',
-        'schedule': crontab(hour='13', minute='40'),  # Каждый день в 19:10
+        'schedule': crontab(hour='13', minute='27'),  # Каждый день в 19:10
     },
     'check_object_kpi_tables_exist': {
         'task': 'tsa_app.tasks.check_object_kpi_tables_exist',
-        'schedule': crontab(hour='13', minute='42'),  # Каждый день в 19:10
+        'schedule': crontab(hour='13', minute='28'),  # Каждый день в 19:10
     },
     'update-kpi-every-morning': {
         'task': 'tsa_app.tasks.update_kpi',
-        'schedule': crontab(hour='13', minute='44'),  # Каждый день в 19:30
+        'schedule': crontab(hour='13', minute='29'),  # Каждый день в 19:30
     },
     'update-objects-with-materials-lunch-time': {
         'task': 'tsa_app.tasks.update_objects_with_materials',
-        'schedule': crontab(hour='13', minute='46'),  # Каждый день в 19:45
+        'schedule': crontab(hour='13', minute='31'),  # Каждый день в 19:45
     },
 
 }

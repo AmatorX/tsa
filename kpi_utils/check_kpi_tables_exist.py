@@ -17,7 +17,7 @@ def is_first_of_the_month():
     Вернет True если 1-е число, иначе вернет False
     """
     today = datetime.now()
-    return today.day == 12
+    return today.day == 1
 
 
 def get_remaining_budget(service, spreadsheet_url, sheet_name):

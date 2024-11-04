@@ -107,8 +107,8 @@ def create_monthly_kpi_table(service, spreadsheet_url, total_budget, sheet_name,
         day_row = [
             {"userEnteredValue": {"numberValue": day}},  # День месяца
             {"userEnteredValue": {"stringValue": ""}},  # Пустая ячейка
-            {"userEnteredValue": {"formulaValue": f"=(B{start_row + 2 + day} / E{start_row + 2 + day -1}) * 100"}},  # Done today %
-            {"userEnteredValue": {"formulaValue": f"=(E{start_row + 2 + day} / E{start_row + 2}) * 100"}},  # Total done %
+            {"userEnteredValue": {"formulaValue": f"=ROUND((B{start_row + 2 + day} / E{start_row + 2 + day -1}) * 100; 2)"}},  # Done today %
+            {"userEnteredValue": {"formulaValue": f"=ROUND((E{start_row + 2 + day} / E{start_row + 2}) * 100; 2)"}},  # Total done %
             {"userEnteredValue": {"formulaValue": f"=(E{start_row + 2 + day - 1} - B{start_row + 2 + day})"}}  # Budget balance
         ]
         requests.append({

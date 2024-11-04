@@ -108,7 +108,7 @@ def track_worker_changes(sender, instance, created, **kwargs):
                 if sh_url:
                     name = instance.name
                     building = instance.build_obj.name
-                    # Обновляем записи с таблице инструментов, так как изменился объект у работника
+                    # Обновляем записи в таблице инструментов, так как изменился объект у работника
                     update_building_in_users_rows(sh_url, name, building)
 
 

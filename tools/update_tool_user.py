@@ -7,6 +7,7 @@ service = get_service()
 
 
 def update_tool_user(sheet_url, instance):
+    print('Start >>>>>>> update_tool_user')
     try:
         spreadsheet_id = sheet_url.split('/')[-2]
         start_row_index = find_row_with_id(spreadsheet_id, instance.tool_id)
@@ -50,6 +51,7 @@ def update_tool_user(sheet_url, instance):
 
 
 def find_row_with_id(spreadsheet_id, search_id):
+    print('Start >>>>>>> find_row_with_id')
     try:
         # Имя листа
         sheet_name = 'Sheet1'
@@ -81,6 +83,7 @@ def find_row_with_id(spreadsheet_id, search_id):
 
 
 def find_rows_with_name(spreadsheet_id, search_name):
+    print(f'Start >>>>>>>> find_rows_with_name')
     try:
         sheet_name = 'Sheet1'
         # sheet_name = 'Лист1'
@@ -114,6 +117,7 @@ def find_rows_with_name(spreadsheet_id, search_name):
 
 
 def update_building_in_users_rows(sheet_url, name, building):
+    print(f'Start >>>>>>>>>> update_building_in_users_rows')
     sheet_name = 'Sheet1'
     # sheet_name = 'Лист1'
     spreadsheet_id = sheet_url.split('/')[-2]

@@ -54,6 +54,7 @@ def get_start_row(values):
 
 def append_user_to_work_time(spreadsheet_url, users, sheet_name='Work Time'):
     service = get_service()
+    print('Старт функции добавления пользователей в work_time')
     print(f'Список пользователей для добавления {users}')
 
     if users is None:
