@@ -19,7 +19,7 @@ class WorkerAdmin(admin.ModelAdmin):
             'fields': ('employment_agreement', 'over_time', 'start_to_work', 'title', 'payroll_eligible', 'payroll', 'resign_agreement', 'benefits_eligible', 'birthday', 'issued', 'expiry', 'address', 'tickets_available'),
         }),
     )
-    list_per_page = 20
+    list_per_page = 10
     # inlines = (WorkerProfileInline,)
 
     def save_model(self, request, obj, form, change):

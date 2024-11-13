@@ -1,5 +1,6 @@
 import calendar
 from datetime import datetime
+from time import sleep
 
 
 def find_last_filled_row_in_column(service, spreadsheet_id, sheet_name, column="A"):
@@ -102,7 +103,7 @@ def create_users_kpi_sheet(service, spreadsheet_url, sheet_name):
 
     # Проверка наличия листа с именем sheet_name
     if not any(sheet['properties']['title'] == sheet_name for sheet in sheets):
-        # Лист с таким именем не найден, создаем новый с 38 столбцами
+        # Лист с таким именем не найден, создаем новый с 52 столбцами
         body = {
             'requests': [{
                 'addSheet': {
@@ -110,14 +111,14 @@ def create_users_kpi_sheet(service, spreadsheet_url, sheet_name):
                         'title': sheet_name,
                         'gridProperties': {
                             'rowCount': 1000,  # Укажите подходящее количество строк в зависимости от ваших потребностей
-                            'columnCount': 38  # Указываем количество столбцов
+                            'columnCount': 52  # Указываем количество столбцов
                         }
                     }
                 }
             }]
         }
         service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=body).execute()
-        print(f"Sheet '{sheet_name}' with 38 columns created.")
+        print(f"Sheet '{sheet_name}' with 52 columns created.")
     else:
         print(f"Sheet '{sheet_name}' already exists.")
 
@@ -185,4 +186,5 @@ def create_users_kpi_table(service, spreadsheet_url, sheet_name='Users KPI'):
 
     # Выполняем все запросы одной транзакцией
     service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests}).execute()
+    sleep(2)
     print(f'Таблица KPI для месяца "{month_name}" создана')

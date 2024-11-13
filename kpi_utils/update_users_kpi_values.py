@@ -50,13 +50,14 @@ def update_kpi_values(data_list):
     for spreadsheet_url, user_data in data_list:
         if not find_users_kpi_table(service, spreadsheet_url):
             create_users_kpi_table(service, spreadsheet_url)
-            sleep(1)
+            sleep(3)
         spreadsheet_id = spreadsheet_url.split("/")[5]
         sheet_name = "Users KPI"
 
         # range_name = f"{sheet_name}!A1:A150"
         range_name = f"{sheet_name}!A:A"
         result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
+        sleep(2)
         values = result.get('values', [])
 
         month_row_index = None
@@ -85,7 +86,7 @@ def update_kpi_values(data_list):
                             update_value_range = f"{sheet_name}!{get_column_letter(current_day)}{name_row_index}"
                             update_value_body = {'values': [[value]]}
                             service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=update_value_range, body=update_value_body, valueInputOption='USER_ENTERED').execute()
-                            sleep(2)
+                            sleep(3)
                             break
                         if not name_row:
                             empty_row_index = name_row_index
@@ -100,14 +101,17 @@ def update_kpi_values(data_list):
                         }
                     }
                     service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": [copy_paste_request]}).execute()
+                    sleep(2)
 
                     update_name_range = f"{sheet_name}!A{empty_row_index}"
                     update_name_body = {'values': [[name]]}
                     service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=update_name_range, body=update_name_body, valueInputOption='USER_ENTERED').execute()
+                    sleep(2)
 
                     update_value_range = f"{sheet_name}!{get_column_letter(current_day)}{empty_row_index}"
                     update_value_body = {'values': [[value]]}
                     service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=update_value_range, body=update_value_body, valueInputOption='USER_ENTERED').execute()
+                    sleep(2)
 
                     # Обновляем переменную values для отражения последних изменений в таблице
                     result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()

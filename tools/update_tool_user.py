@@ -16,8 +16,8 @@ def update_tool_user(sheet_url, instance):
             return
 
         # Конвертируем индекс строки в диапазон для обновления
-        # sheet_name = 'Лист1'
-        sheet_name = 'Sheet1'
+        sheet_name = 'Лист1'
+        # sheet_name = 'Sheet1'
         sheet_range = f'{sheet_name}!A{start_row_index}:F{start_row_index}'
         if instance:
             price = str(instance.price)
@@ -54,8 +54,8 @@ def find_row_with_id(spreadsheet_id, search_id):
     print('Start >>>>>>> find_row_with_id')
     try:
         # Имя листа
-        sheet_name = 'Sheet1'
-        # sheet_name = 'Лист1'
+        # sheet_name = 'Sheet1'
+        sheet_name = 'Лист1'
         # Диапазон для чтения данных (все ячейки столбца A)
         # range_name = f'{sheet_name}!A:A'
         range_name = f"{sheet_name}!A1:A"
@@ -85,8 +85,8 @@ def find_row_with_id(spreadsheet_id, search_id):
 def find_rows_with_name(spreadsheet_id, search_name):
     print(f'Start >>>>>>>> find_rows_with_name')
     try:
-        sheet_name = 'Sheet1'
-        # sheet_name = 'Лист1'
+        # sheet_name = 'Sheet1'
+        sheet_name = 'Лист1'
 
         # Диапазон для чтения данных (все ячейки столбца B)
         range_name = f'{sheet_name}!D1:D'
@@ -118,8 +118,8 @@ def find_rows_with_name(spreadsheet_id, search_name):
 
 def update_building_in_users_rows(sheet_url, name, building):
     print(f'Start >>>>>>>>>> update_building_in_users_rows')
-    sheet_name = 'Sheet1'
-    # sheet_name = 'Лист1'
+    # sheet_name = 'Sheet1'
+    sheet_name = 'Лист1'
     spreadsheet_id = sheet_url.split('/')[-2]
     target_rows = find_rows_with_name(spreadsheet_id, name)
     # Обновляем значение в 5-й ячейке (столбец E) для каждой строки

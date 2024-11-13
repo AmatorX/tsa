@@ -25,6 +25,7 @@ def get_remaining_budget(service, spreadsheet_url, sheet_name):
     range_name = f"{sheet_name}!E1:E"  # Запрашиваем данные только из первого столбца
     # Получаем данные столбца
     result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
+    sleep(2)
     values = result.get('values', [])
     # Определяем номер последней заполненной строки
     last_row = len(values) - 1 if values else 0
@@ -53,6 +54,7 @@ def check_materials_in_table(spreadsheet_id, materials, month_row):
     end_column = ''  # Последний столбец который нужен, если оставить пустым, берутся все до конца
     row_range = f"Object KPI!{start_column}{month_row}:{end_column}{month_row}"
     row_result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=row_range).execute()
+    sleep(2)
 
     row_values = row_result.get('values', [])
     materials_list_in_table = [item if item else "" for sublist in row_values for item in sublist]
@@ -73,6 +75,7 @@ def check_material_table(spreadsheet_url, materials):
     now = datetime.now()
     current_month = now.strftime("%B")
     result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
+    sleep(2)
     values = result.get('values', [])
 
     flat_values = [item[0] if item else "" for item in values]
@@ -141,6 +144,7 @@ def create_materials_table(spreadsheet_url, materials, start_row):
         body=body,
         valueInputOption='USER_ENTERED'
     ).execute()
+    sleep(2)
 
     # Запросы на форматирование ячеек (границы)
     requests = []
@@ -167,6 +171,7 @@ def create_materials_table(spreadsheet_url, materials, start_row):
     # Применение запросов на форматирование
     body = {'requests': requests}
     service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=body).execute()
+    sleep(2)
 
 
 def if_object_kpi_tables_exist(data, sheet_name='Object KPI'):

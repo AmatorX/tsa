@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 import calendar
 from time import sleep
@@ -7,6 +8,28 @@ from common.service import service
 
 
 service = service.get_service()
+
+
+def column_index_to_letter(index):
+    """
+    Преобразует индекс столбца в буквенное представление (например, 0 -> A, 27 -> AB).
+    """
+    letters = ""
+    while index >= 0:
+        letters = chr(index % 26 + ord('A')) + letters
+        index = index // 26 - 1
+    return letters
+
+
+def column_letter_to_index(column_letter):
+    """
+    Преобразует буквенное название столбца в числовой индекс (например, A -> 0, Z -> 25, AA -> 26).
+    """
+    index = 0
+    for char in column_letter:
+        index = index * 26 + (ord(char) - ord('A') + 1)
+    return index - 1
+
 
 
 def create_materials_table(spreadsheet_url, materials, start_row):
@@ -23,7 +46,8 @@ def create_materials_table(spreadsheet_url, materials, start_row):
     # Определение диапазона для вставки данных
     sheet_name = "Object KPI"
     start_column = "H"
-    end_column = chr(ord(start_column) + len(materials))
+    end_column = column_index_to_letter(ord(start_column) - ord('A') + len(materials))
+    # end_column = chr(ord(start_column) + len(materials))
 
     # Подготовка данных для вставки
     values = []
@@ -54,10 +78,12 @@ def create_materials_table(spreadsheet_url, materials, start_row):
         body=body,
         valueInputOption='USER_ENTERED'
     ).execute()
+    sleep(2)
 
     # Запросы на форматирование ячеек (границы)
     requests = []
-
+    start_column_index = column_letter_to_index(start_column)
+    end_column_index = column_letter_to_index(end_column) + 1
     # Границы для всей таблицы
     requests.append({
         'updateBorders': {
@@ -65,8 +91,10 @@ def create_materials_table(spreadsheet_url, materials, start_row):
                 'sheetId': get_sheet_id(service, spreadsheet_id, sheet_name),
                 'startRowIndex': start_row - 1,
                 'endRowIndex': start_row - 1 + len(values),
-                'startColumnIndex': ord(start_column) - ord('A'),
-                'endColumnIndex': ord(end_column) - ord('A') + 1
+                'startColumnIndex': start_column_index,
+                'endColumnIndex': end_column_index
+                # 'startColumnIndex': ord(start_column) - ord('A'),
+                # 'endColumnIndex': ord(end_column) - ord('A') + 1
             },
             'top': {'style': 'SOLID'},
             'bottom': {'style': 'SOLID'},
@@ -80,11 +108,13 @@ def create_materials_table(spreadsheet_url, materials, start_row):
     # Применение запросов на форматирование
     body = {'requests': requests}
     service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=body).execute()
+    sleep(2)
 
 
 def get_sheet_id(service, spreadsheet_id, sheet_name):
     # Получение идентификатора листа по его имени
     sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+    sleep(2)
     sheets = sheet_metadata.get('sheets', '')
     for sheet in sheets:
         if sheet['properties']['title'] == sheet_name:
@@ -93,6 +123,9 @@ def get_sheet_id(service, spreadsheet_id, sheet_name):
 
 
 def merge_dictionaries(dict1, dict2):
+    logging.info(f'Функция merge_dictionaries переданы аргументы')
+    logging.info(f'dict1 -> {dict1}')
+    logging.info(f'dict2 -> {dict2}')
     result_dict = {}
 
     for key, material in dict1.items():
@@ -100,7 +133,7 @@ def merge_dictionaries(dict1, dict2):
             result_dict[key] = dict2[material]
         else:
             result_dict[key] = 0  # или любое другое значение по умолчанию, если материал не найден в dict2
-    print(f'Result Dict {result_dict}')
+    logging.info(f'Функция merge_dictionaries возвращает словарь -> {result_dict}')
     return result_dict
 
 
@@ -115,6 +148,7 @@ def check_material_table(spreadsheet_url, materials):
     now = datetime.now()
     current_month = now.strftime("%B")
     result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
+    sleep(2)
     values = result.get('values', [])
 
     flat_values = [item[0] if item else "" for item in values]
@@ -145,7 +179,11 @@ def check_materials_in_table(spreadsheet_id, materials, month_row):
     start_column = 'I'
     end_column = ''  # Последний столбец который нужен, если оставить пустым, берутся все до конца
     row_range = f"Object KPI!{start_column}{month_row}:{end_column}{month_row}"
+    print(f'Функция check_materials_in_table')
+    print(f'month_row: {month_row}')
+    print(f'row_range: {row_range}')
     row_result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=row_range).execute()
+    sleep(2)
 
     row_values = row_result.get('values', [])
     materials_list_in_table = [item if item else "" for sublist in row_values for item in sublist]
@@ -155,19 +193,36 @@ def check_materials_in_table(spreadsheet_id, materials, month_row):
     return materials_list_in_table
 
 
+# def create_materials_dict(materials):
+#     """
+#     Функция принимает список материалов и возвращает словарь, где ключами являются
+#     последовательные буквы начиная с 'I', а значениями - элементы списка.
+#     """
+#     start_char_code = ord('I')
+#     materials_dict = {}
+#
+#     for index, material in enumerate(materials):
+#         column_letter = chr(start_char_code + index)
+#         materials_dict[column_letter] = material
+#
+#     return materials_dict
+
+
 def create_materials_dict(materials):
     """
     Функция принимает список материалов и возвращает словарь, где ключами являются
     последовательные буквы начиная с 'I', а значениями - элементы списка.
     """
-    start_char_code = ord('I')
+    start_index = ord('I') - ord('A')  # Начинаем с колонки 'I'
     materials_dict = {}
 
     for index, material in enumerate(materials):
-        column_letter = chr(start_char_code + index)
+        column_letter = column_index_to_letter(start_index + index)  # Смещение от 'I'
         materials_dict[column_letter] = material
 
     return materials_dict
+
+
 
 
 def get_row_indexes_total_materials(spreadsheet_url, days_in_month):
@@ -283,6 +338,8 @@ def update_materials_values(spreadsheet_url, materials, materials_list_in_table,
 
 
 def update_spreadsheet(spreadsheet_url, data_dict):
+    print(f'Функция update_spreadsheet, переданы аргументы data_dict: {data_dict}')
+
     spreadsheet_id = spreadsheet_url.split("/")[5]
     sheet_name = "Object KPI"
 
@@ -293,6 +350,7 @@ def update_spreadsheet(spreadsheet_url, data_dict):
 
     # Получение всех значений в столбце H
     range_name = f"{sheet_name}!H:H"
+    logging.info(f'Функция update_spreadsheet range_name -> {range_name}')
     result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
     values = result.get('values', [])
 
@@ -316,7 +374,7 @@ def update_spreadsheet(spreadsheet_url, data_dict):
         source_range = f"{sheet_name}!{col_letter}{month_row + 2}"
         source_result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=source_range).execute()
         source_values = source_result.get('values', [])
-        sleep(2)
+        sleep(4)
 
         # Проверка наличия значения в ячейке
         if source_values and source_values[0]:
@@ -338,6 +396,7 @@ def update_spreadsheet(spreadsheet_url, data_dict):
         'data': updates
     }
     service.spreadsheets().values().batchUpdate(spreadsheetId=spreadsheet_id, body=body).execute()
+    sleep(2)
 
 
 def calculate_sums_materials_in_results(spreadsheet_url, row_indexes, sh_name):
@@ -365,20 +424,24 @@ def calculate_sums_materials_in_results(spreadsheet_url, row_indexes, sh_name):
 
         # Создаем пару ключ: значение в словаре
         results[name] = sum_x
-    print(f'Results {results}')
-    sleep(4)
+    logging.info(f'Функция calculate_sums_materials_in_results возвращает -> {results}')
+    # print(f'Results {results}')
+    sleep(5)
     return results
 
 
 def update_materials_on_objects(data: dict):
+
     """
     Функция обновления данных в таблице учета материалов объекта.
     Обновляет данные на текущий день
     """
+    logging.info(F'Для обновления данных по использованию материалов в функцию update_materials_on_objects передан словарь -> {data}')
     for spreadsheet_url, materials in data.items():
         materials_list_in_table, month_row_index = check_material_table(spreadsheet_url, materials)
+        logging.info(f'Данные для обновления расхода материалов {materials_list_in_table}, {month_row_index}')
         update_materials_values(spreadsheet_url, materials, materials_list_in_table,  month_row_index)
-        sleep(4)
+        sleep(6)
 
 
 

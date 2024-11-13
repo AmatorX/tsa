@@ -68,6 +68,7 @@ def find_cell_by_date(spreadsheet_url):
     try:
         # Получение метаданных таблицы
         sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+        sleep(2)
         sheets = sheet_metadata.get('sheets', '')
         sheet_names = [sheet['properties']['title'] for sheet in sheets]
         logging.debug(f'Доступные листы: {sheet_names}')
@@ -82,6 +83,7 @@ def find_cell_by_date(spreadsheet_url):
 
         # Получение данных из листа
         result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
+        sleep(2)
         values = result.get('values', [])
         logging.debug(f'Values: {values}')
 
@@ -114,6 +116,7 @@ def calculate_salary_by_names(spreadsheet_url, user_info_list):
 
     # Получение данных из листа
     result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
+    sleep(2)
     values = result.get('values', [])
 
     for user in user_info_list:
@@ -128,6 +131,7 @@ def calculate_salary_by_names(spreadsheet_url, user_info_list):
                 hours_range = f'Work Time!{chr(65 + date_col_index - 1)}{date_row_index + row_index + 1}'
                 hours_result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id,
                                                                    range=hours_range).execute()
+                sleep(2)
                 hours = hours_result.get('values', [[0]])[0][0]
 
                 # Проверка и предобработка данных
@@ -161,7 +165,7 @@ def get_kpi_for_work_time(sh_and_users):
         user_info_list = data_list[1]
         name_salary_work_time = calculate_salary_by_names(spreadsheet_url, user_info_list)
         work_time_kpi.append(name_salary_work_time)
-        sleep(3)
+        sleep(6)
     logging.debug(f'KPI WORk TIME\n{work_time_kpi}')
     return work_time_kpi
 
@@ -186,6 +190,7 @@ def get_indexes_cell_name(service, spreadsheet_url, sheet_name, name):
         spreadsheetId=spreadsheet_id,
         range=range_name
     ).execute()
+    sleep(2)
 
     values = result.get('values', [])
 
@@ -226,6 +231,7 @@ def calculate_total_material_cost(service, spreadsheet_url, sheet_name, name, st
         spreadsheetId=spreadsheet_id,
         range=material_price_range
     ).execute()
+    sleep(2)
     material_price_values = material_price_result.get('values', [[]])[0]
 
     # Определение диапазона для salary
@@ -235,6 +241,7 @@ def calculate_total_material_cost(service, spreadsheet_url, sheet_name, name, st
         spreadsheetId=spreadsheet_id,
         range=salary_range
     ).execute()
+    sleep(2)
     salary_values = salary_result.get('values', [[]])[0]
 
     # Вычисление суммы произведений
@@ -247,7 +254,7 @@ def calculate_total_material_cost(service, spreadsheet_url, sheet_name, name, st
         else:
             break  # Прекращаем цикл, если встретили пустую ячейку в material_price
     logging.debug(f"Total cost for {name}: {total_cost}")
-    sleep(3)
+    sleep(2)
     return name, total_cost
 
 
@@ -262,15 +269,17 @@ def get_kpi_for_results(sh_and_users):
         for user_data in user_info_list:
             name = user_data[0]
             name, start_row = get_indexes_cell_name(service=service, spreadsheet_url=spreadsheet_url, sheet_name=sheet_name, name=name)
+            sleep(2)
             name_salary_results = calculate_total_material_cost(
                 service=service,
                 spreadsheet_url=spreadsheet_url,
                 sheet_name=sheet_name,
                 name=name,
                 start_row=start_row)
+            sleep(2)
             user_results.append(list(name_salary_results))
         kpi_results[spreadsheet_url] = user_results
-        sleep(1)
+        sleep(4)
 
     # Преобразование словаря в список кортежей
     kpi_results = [(url, data) for url, data in kpi_results.items()]

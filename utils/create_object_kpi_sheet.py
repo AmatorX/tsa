@@ -41,11 +41,24 @@ def create_object_kpi_sheet(service, spreadsheet_url, build_object, sheet_name):
         'requests': [{
             'addSheet': {
                 'properties': {
-                    'title': sheet_name
+                    'title': sheet_name,
+                    'gridProperties': {
+                        'rowCount': 1000,  # Укажите подходящее количество строк
+                        'columnCount': 52  # Указываем количество столбцов
+                    }
                 }
             }
         }]
     }
+    # request_body = {
+    #     'requests': [{
+    #         'addSheet': {
+    #             'properties': {
+    #                 'title': sheet_name
+    #             }
+    #         }
+    #     }]
+    # }
     response = service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=request_body).execute()
     sheet_id = response.get('replies', [])[0].get('addSheet', {}).get('properties', {}).get('sheetId')
 
@@ -140,6 +153,6 @@ def create_monthly_kpi_table(service, spreadsheet_url, total_budget, sheet_name,
 
     # Выполнение запросов
     service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests}).execute()
-    sleep(1)
+    sleep(2)
     print(f'Таблица KPI для месяца "{month_name}" создана')
 

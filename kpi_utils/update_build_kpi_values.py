@@ -17,7 +17,7 @@ def is_first_of_the_month():
     Вернет True если 1-е число, иначе вернет False
     """
     today = datetime.now()
-    return today.day == 12
+    return today.day == 1
 
 
 def get_remaining_budget(service, spreadsheet_url, sheet_name):
@@ -25,6 +25,7 @@ def get_remaining_budget(service, spreadsheet_url, sheet_name):
     range_name = f"{sheet_name}!E1:E"  # Запрашиваем данные только из первого столбца
     # Получаем данные столбца
     result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
+    sleep(2)
     values = result.get('values', [])
     # Определяем номер последней заполненной строки
     last_row = len(values) - 1 if values else 0
@@ -46,6 +47,7 @@ def get_current_day_row(spreadsheet_url, sheet_name):
 
     # Получаем данные из столбца A
     result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
+    sleep(2)
     values = result.get('values', [])
 
     # Находим строку с текущим месяцем
@@ -60,6 +62,7 @@ def get_current_day_row(spreadsheet_url, sheet_name):
     # Проверяем диапазон дат с найденной строки по конец столбца
     day_range_name = f"{sheet_name}!A{month_row}:A"
     result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=day_range_name).execute()
+    sleep(2)
     day_values = result.get('values', [])
 
     # Находим строку с текущим числом
@@ -94,7 +97,7 @@ def update_kpi_value(spreadsheet_url, total_sum, current_day_row):
         valueInputOption='USER_ENTERED',
         body=body
     ).execute()
-    sleep(4)
+    sleep(6)
 
     print(f'Updated total sum: {total_sum} in {range_name} on sheet {sheet_name}')
     return result
@@ -111,7 +114,7 @@ def update_build_kpi(build_kpi, sheet_name='Object KPI'):
 
         # Обновляем данные в KPI
         update_kpi_value(spreadsheet_url, total_sum, current_day_row)
-        sleep(4)  # Пауза между обновлениями для каждой таблицы
+        sleep(6)  # Пауза между обновлениями для каждой таблицы
 
 
 
