@@ -2,7 +2,6 @@ from django.db.models.signals import m2m_changed, post_save, pre_save, post_dele
 from django.dispatch import receiver
 import logging
 
-from logging_config import setup_logging
 from tools.create_headers_tools_table import create_headers_tools_table
 from tools.remove_tool_from_sheet import remove_tool_from_sheet
 from tools.add_tool_to_sheet import add_tool_to_sheet
@@ -16,8 +15,6 @@ from utils.add_users_to_work_time import append_user_to_work_time
 from utils.add_users_to_results_photos import add_users_to_results_photos
 from common.get_service import get_service
 
-
-setup_logging()
 logger = logging.getLogger(__name__)
 
 
@@ -82,9 +79,7 @@ def track_worker_changes(sender, instance, created, **kwargs):
             append_user_to_work_time(
                 instance.build_obj.sh_url,
                 [(instance.name, instance.salary)])
-            add_users_to_results_photos(
-                instance.build_obj.sh_url,
-                [instance.name])
+            add_users_to_results_photos(instance.build_obj.sh_url, [instance.name])
 
     else:
         # Объект обновляется, проверяем изменение привязки к объекту строительства
@@ -101,9 +96,7 @@ def track_worker_changes(sender, instance, created, **kwargs):
                 append_user_to_work_time(
                     instance.build_obj.sh_url,
                     [(instance.name, instance.salary)])
-                add_users_to_results_photos(
-                    instance.build_obj.sh_url,
-                    [instance.name])
+                add_users_to_results_photos(instance.build_obj.sh_url, [instance.name])
                 sh_url = ToolsSheet.objects.first().sh_url
                 if sh_url:
                     name = instance.name

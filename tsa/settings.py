@@ -132,7 +132,7 @@ STATIC_URL = '/static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
+#
 # LOGLEVEL = getenv("DJANGO_LOG_LEVEL", "info").upper()
 # logging.config.dictConfig({
 #     "version": 1,
@@ -157,6 +157,29 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 #         },
 #     },
 # })
+LOGLEVEL = getenv("DJANGO_LOG_LEVEL", "INFO").upper()
+
+logging.config.dictConfig({
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "console": {
+            "format": "%(asctime)s %(levelname)s [%(name)s:%(lineno)d] %(module)s %(message)s"
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "console",
+        },
+    },
+    "loggers": {
+        "": {
+            "level": LOGLEVEL,
+            "handlers": ["console"],
+        },
+    },
+})
 CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Используйте Redis или другого брокера
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
@@ -173,23 +196,23 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_BEAT_SCHEDULE = {
     'check_and_create_tables_results_and_photos': {
         'task': 'tsa_app.tasks.check_and_create_tables_results_and_photos',
-        'schedule': crontab(hour='13', minute='45'),  # Каждый день в 19:45
+        'schedule': crontab(hour='11', minute='31'),  # Каждый день в 19:45
     },
     'check-and-create-tables-every-night': {
         'task': 'tsa_app.tasks.check_and_create_table_work_time',
-        'schedule': crontab(hour='13', minute='47'),  # Каждый день в 19:10
+        'schedule': crontab(hour='11', minute='32'),  # Каждый день в 19:10
     },
     'check_object_kpi_tables_exist': {
         'task': 'tsa_app.tasks.check_object_kpi_tables_exist',
-        'schedule': crontab(hour='13', minute='49'),  # Каждый день в 19:10
+        'schedule': crontab(hour='12', minute='50'),  # Каждый день в 19:10
     },
     'update-kpi-every-morning': {
-        'task': 'tsa_app.tasks.update_kpi',
-        'schedule': crontab(hour='13', minute='51'),  # Каждый день в 19:30
+        'task': 'tsa_app.tasks.update_kpi_task',
+        'schedule': crontab(hour='12', minute='52'),  # Каждый день в 19:30
     },
     'update-objects-with-materials-lunch-time': {
-        'task': 'tsa_app.tasks.update_objects_with_materials',
-        'schedule': crontab(hour='13', minute='54'),  # Каждый день в 19:45
+        'task': 'tsa_app.tasks.update_objects_with_materials_task',
+        'schedule': crontab(hour='12', minute='54'),  # Каждый день в 19:45
     },
 
 }

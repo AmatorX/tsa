@@ -1,4 +1,5 @@
 import datetime
+import logging
 from time import sleep
 
 from common.return_results_curr_month_year import generate_results_filename
@@ -6,6 +7,7 @@ from .get_start_end_indexes_rows import get_start_end_table
 from common.service import service
 
 
+logger = logging.getLogger(__name__)
 service = service.get_service()
 
 
@@ -289,3 +291,102 @@ def add_users_to_results_photos(spreadsheet_url, usernames):
         return "Пользователи успешно добавлены в таблицы текущего месяца."
     else:
         print(f'Имя {target_name} уже есть в таблицах, добавление не нужно!')
+
+
+def add_many_users_to_results_photos(spreadsheet_url, usernames):
+    logger.info(f"Начало функции add_users_to_results_photos. Имена для вставки: {usernames}")
+    spreadsheet_id = spreadsheet_url.split("/")[5]
+    names = get_names_in_results(spreadsheet_id)
+    names_list = convert_to_string_list(names)
+
+    logger.debug(f"Полученные имена из таблиц: {names_list}")
+
+    # Определение текущего месяца и года
+    current_year = datetime.datetime.now().year
+    current_month = datetime.datetime.now().strftime('%B')
+    current_suffix = f"{current_month}_{current_year}"
+
+    # Фильтруем только те имена, которых еще нет в таблицах
+    new_usernames = [username for username in usernames if username not in names_list]
+    if not new_usernames:
+        logger.info("Все имена уже существуют в таблицах, добавление не требуется.")
+        return "Имена уже существуют в таблицах."
+
+    logger.info(f"Имена для добавления: {new_usernames}")
+
+    # Получение списка всех листов
+    try:
+        sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+        sheets = sheet_metadata.get('sheets', '')
+        logger.debug(f"Получено метаданных листов: {len(sheets)}")
+    except Exception as e:
+        logger.error(f"Ошибка при получении метаданных листов: {e}")
+        return
+
+    for sheet in sheets:
+        sheet_name = sheet['properties']['title']
+        if sheet_name.endswith(current_suffix):
+            logger.info(f"Обработка листа: {sheet_name}")
+            sheet_id = sheet['properties']['sheetId']
+            try:
+                start_copy, end_copy, start_paste, end_paste = get_start_end_table(service, spreadsheet_id, sheet_name)
+                logger.debug(
+                    f"Диапазоны: start_copy={start_copy}, end_copy={end_copy}, start_paste={start_paste}, end_paste={end_paste}")
+            except Exception as e:
+                logger.error(f"Ошибка при получении диапазонов: {e}")
+                continue
+
+            requests = []
+            for username in new_usernames:
+                # Добавление запроса на копирование диапазона
+                requests.append({
+                    "copyPaste": {
+                        "source": {
+                            "sheetId": sheet_id,
+                            "startRowIndex": start_copy,
+                            "endRowIndex": end_copy,
+                            "startColumnIndex": 0,
+                            "endColumnIndex": 26
+                        },
+                        "destination": {
+                            "sheetId": sheet_id,
+                            "startRowIndex": start_paste,
+                            "endRowIndex": end_paste,
+                            "startColumnIndex": 0,
+                            "endColumnIndex": 26
+                        },
+                        "pasteType": "PASTE_NORMAL",
+                        "pasteOrientation": "NORMAL"
+                    }
+                })
+
+                # Добавление запроса на изменение значения в ячейке с именем пользователя
+                requests.append({
+                    "updateCells": {
+                        "rows": [{
+                            "values": [{"userEnteredValue": {"stringValue": username}}]
+                        }],
+                        "fields": "userEnteredValue",
+                        "start": {
+                            "sheetId": sheet_id,
+                            "rowIndex": start_paste,
+                            "columnIndex": 1
+                        }
+                    }
+                })
+
+                # Обновление индексов для следующего добавления
+                start_paste = end_paste + 4
+                end_paste = start_paste + (end_copy - start_copy)
+
+            # Выполнение всех запросов за раз
+            try:
+                body = {"requests": requests}
+                response = service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=body).execute()
+                logger.info(f"Запрос выполнен успешно: {response}")
+            except Exception as e:
+                logger.error(f"Ошибка при выполнении batchUpdate: {e}")
+
+    logger.info("Пользователи успешно добавлены в таблицы текущего месяца.")
+    return "Пользователи успешно добавлены в таблицы текущего месяца."
+

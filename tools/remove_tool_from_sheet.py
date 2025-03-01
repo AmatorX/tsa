@@ -57,8 +57,8 @@ def remove_tool_from_sheet(sheet_url, instance):
             return
 
         # Имя листа и идентификатор листа (0 для первого листа)
-        # sheet_name = 'Лист1'
-        sheet_name = 'Sheet1'
+        sheet_name = 'Лист1'
+        # sheet_name = 'Sheet1'
         sheet_id = 0  # Используйте 0 для первого листа
 
         # Запрос на удаление строки
@@ -90,8 +90,8 @@ def remove_tool_from_sheet(sheet_url, instance):
 def find_row_with_id(spreadsheet_id, search_id):
     try:
         # Имя листа
-        sheet_name = 'Sheet1'
-        # sheet_name = 'Лист1'
+        # sheet_name = 'Sheet1'
+        sheet_name = 'Лист1'
         # Диапазон для чтения данных (все ячейки столбца A)
         # range_name = f'{sheet_name}!A:A'
         range_name = f"{sheet_name}!A1:A"

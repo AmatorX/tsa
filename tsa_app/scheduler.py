@@ -1,7 +1,6 @@
 import os
 import datetime
 import logging
-from logging_config import setup_logging
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -16,7 +15,6 @@ from kpi_utils.update_build_kpi_values import update_build_kpi
 from kpi_utils.expenses_materials_in_objects import update_materials_on_objects
 
 
-setup_logging()
 logger = logging.getLogger(__name__)
 
 

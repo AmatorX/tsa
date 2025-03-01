@@ -13,7 +13,7 @@ from utils.create_results_photos import create_monthly_sheets
 from utils.create_tables_work_time import create_work_time_tables
 from common.days_list import create_date_list
 from .models import Worker, BuildObject
-from kpi_utils.create_kpi_data import update_data_users_kpi
+from kpi_utils.create_kpi_data import update_data_users_kpi, earned_today_for_installing_materials
 from kpi_utils.update_build_kpi_values import update_build_kpi
 from kpi_utils.expenses_materials_in_objects import update_materials_on_objects
 import logging
@@ -193,21 +193,43 @@ def get_objects_and_related_users():
     return result
 
 
+# @shared_task
+# def update_kpi():
+#     """
+#     Функция обновления значений KPI для users и building
+#     Запускается через планироващик
+#     """
+#     result = get_objects_and_related_users()
+#     logger.info('Старт рассчета KPI из планировщика')
+#     kpi_results = update_data_users_kpi(result)
+#     update_build_kpi(kpi_results)
+#     logger.info('Планировщик отработал успешно, данные обновлены')
+#     return result
+
+
+
 @shared_task
+def update_kpi_task():
+    update_kpi()
+
+
 def update_kpi():
-    """
-    Функция обновления значений KPI для users и building
-    Запускается через планироващик
-    """
     result = get_objects_and_related_users()
-    logger.info('Старт рассчета KPI из планировщика')
-    kpi_results = update_data_users_kpi(result)
-    update_build_kpi(kpi_results)
-    logger.info('Планировщик отработал успешно, данные обновлены')
+    logger.info('Старт рассчета KPI')
+    # kpi_results = update_data_users_kpi(result)
+    kpi_results = update_data_users_kpi()
+    build_total_sum_earned_from_installed = earned_today_for_installing_materials()
+    # update_build_kpi(kpi_results)
+    update_build_kpi(build_total_sum_earned_from_installed)
+    logger.info('KPI успешно обновлены')
     return result
 
 
 @shared_task
+def update_objects_with_materials_task():
+    update_objects_with_materials()
+
+
 def update_objects_with_materials():
     building_objects = BuildObject.objects.all()
     building_objects_dict = {}

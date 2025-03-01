@@ -3,13 +3,11 @@ from calendar import monthrange
 import logging
 import string
 from time import sleep
-from logging_config import setup_logging
 from common.return_results_curr_month_year import generate_results_filename
 from common.service import service
 
 
 service = service.get_service()
-setup_logging()
 
 
 def make_lst(data: list):

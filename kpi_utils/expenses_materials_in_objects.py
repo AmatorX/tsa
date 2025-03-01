@@ -61,7 +61,7 @@ def create_materials_table(spreadsheet_url, materials, start_row):
     values.append(units_row)
 
     # Остальные строки: числа текущего месяца и пустые ячейки
-    days_in_month = (datetime(now.year, now.month + 1, 1) - datetime(now.year, now.month, 1)).days
+    days_in_month = calendar.monthrange(now.year, now.month)[1]
     for day in range(1, days_in_month + 1):
         row = [day] + [""] * len(materials)
         values.append(row)

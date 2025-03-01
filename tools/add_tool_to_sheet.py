@@ -1,15 +1,19 @@
+import logging
+
 from googleapiclient.errors import HttpError
 
 from common.service import service
 
 service = service.get_service()
+logger = logging.getLogger(__name__)
 
 
 def add_tool_to_sheet(sh_url, instance):
+    logger.info("Функция add_tool_to_sheet запущена")
     try:
         spreadsheet_id = sh_url.split('/')[-2]
-        sheet_name = 'Sheet1'
-        # sheet_name = 'Лист1'
+        # sheet_name = 'Sheet1'
+        sheet_name = 'Лист1'
 
         # Получаем текущее количество строк в таблице
         sheet_data = service.spreadsheets().values().get(

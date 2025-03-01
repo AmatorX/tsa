@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from time import sleep
 
@@ -9,6 +10,8 @@ from common.last_non_empty_row import get_last_non_empty_row
 
 
 service = service.get_service()
+
+logger = logging.getLogger(__name__)
 
 
 def is_first_of_the_month():
@@ -73,6 +76,8 @@ def get_current_day_row(spreadsheet_url, sheet_name):
 
 
 def update_kpi_value(spreadsheet_url, total_sum, current_day_row):
+    logger.info(f"Функция обновления данных update_kpi_value запущена")
+
     spreadsheet_id = spreadsheet_url.split("/")[5]
     sheet_name = 'Object KPI'
     column_letter = 'B'  # Столбец B для записи total_sum
@@ -103,7 +108,12 @@ def update_kpi_value(spreadsheet_url, total_sum, current_day_row):
     return result
 
 
+
 def update_build_kpi(build_kpi, sheet_name='Object KPI'):
+    # !!!!! Сейчас в user_data передаются данные вида
+    # [('https://docs.google.com/spreadsheets/d/1Y2Wt6fLdDkjR2QZoEui0_2LtJCihzdTjOZXS4N5QNr4/edit?gid=0#gid=0', [['Alexandr Pinsky', 256.0], ['Farhad', 1122.6]]), ('https://docs.google.com/spreadsheets/d/1JFbB5TucFZn-xl4NtTVpcYAvqP89DZmOy5xxB18rBsI/edit?gid=661746781#gid=661746781', [['Leon', -76.80000000000001]])]
+    # где числа это разница заработанного и заплаченного по ставке за часы, необъодимо тут передавать фактически заработанное
+    logger.info(f'Функция обновления KPI для таблицы Build KPI запущена. Передан аргумент build_kpi: {build_kpi}')
     # Перебор всех записей в build_kpi
     for spreadsheet_url, user_data in build_kpi:
         total_sum = sum(value for _, value in user_data)
@@ -113,6 +123,8 @@ def update_build_kpi(build_kpi, sheet_name='Object KPI'):
         print(f'Current day row: {current_day_row}')
 
         # Обновляем данные в KPI
+        logger.info(f'Функция обновления KPI для таблицы Build KPI передает данные в update_kpi_value: '
+                    f'{spreadsheet_url}, total_sum: {spreadsheet_url}, current_day_row: {current_day_row}')
         update_kpi_value(spreadsheet_url, total_sum, current_day_row)
         sleep(6)  # Пауза между обновлениями для каждой таблицы
 
